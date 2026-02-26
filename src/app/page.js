@@ -1,28 +1,81 @@
-async function getFoods() {
-  const res = await fetch("http://localhost:3000/api/foods", {
-    cache: "no-store",
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import FoodAdd from "@/components/FoodAdd";
+import FoodFilter from "@/components/FoodFilter";
+import { getFoods } from "../components/api"
+import FoodCard from "@/components/FoodCard";
+
+export default function Home() {
+  const [foods, setFoods] = useState([]);
+  const [filters, setFilters] = useState({
+    name: "",
+    dietType: [],
+    healthGoals: [],
+    cuisine: "",
+    mealTiming: [],
+    mood: [],
+    cookTime: [],
   });
+  const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch foods");
-  }
+  const fetchFoods = useCallback(async () => {
+    // Check if any filter is active
+    const hasActiveFilters = Object.keys(filters).some((key) => {
+      const value = filters[key];
+      return Array.isArray(value) ? value.length > 0 : !!value;
+    });
 
-  return res.json();
-}
+    if (!hasActiveFilters) {
+      setFoods([]);
+      setHasSearched(false);
+      return;
+    }
 
-export default async function Home() {
-  const foods = await getFoods();
+    setLoading(true);
+    setHasSearched(true);
+    try {
+      const params = new URLSearchParams();
+      for (const key in filters) {
+        const value = filters[key];
+        if (Array.isArray(value)) {
+          value.forEach((v) => params.append(key, v));
+        } else if (value) {
+          params.append(key, value);
+        }
+      }
+      const data = await getFoods(params.toString());
+      setFoods(data || []);
+    } catch (error) {
+      console.error("Failed to fetch foods:", error);
+      setFoods([]);
+    }
+    setLoading(false);
+  }, [filters]);
+
+  useEffect(() => {
+    fetchFoods();
+  }, [fetchFoods]);
 
   return (
     <div className="p-10">
-      <h1 className="text-2xl font-bold mb-5">MealMind 🍽️</h1>
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-2xl font-bold">MealMind 🍽️</h1>
+        <FoodAdd onSuccess={fetchFoods} />
+      </div>
 
-      {foods.map((food) => (
-        <div key={food._id} className="border p-4 mb-3 rounded">
-          <h2 className="font-semibold">{food.name}</h2>
-          <p>Calories: {food.calories}</p>
-        </div>
-      ))}
+      <FoodFilter filters={filters} setFilters={setFilters} />
+
+      {loading ? (
+        <p>Loading...</p>
+      ) : foods.length > 0 ? (
+        foods.map((food) => <FoodCard key={food._id} food={food} />)
+      ) : (
+        <p className="text-center text-gray-500 mt-10">
+          {hasSearched ? "No food items found matching your criteria." : "Select filters to see food recommendations 🥗"}
+        </p>
+      )}
     </div>
   );
 }
