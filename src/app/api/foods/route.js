@@ -4,49 +4,48 @@ import Food from "@/models/Food";
 export async function POST(req) {
   try {
     await connectDB();
-
     const body = await req.json();
-    console.log("Incoming body:", body);
 
-    // Safety: agar order-online hai to recipe hata do
+    // remove price from payload if present – field has been deprecated
+    if (body.price !== undefined) {
+      delete body.price;
+    }
+
+    if (!body.name || !body.image || !body.cookingMode) {
+      return Response.json(
+        { success: false, message: "Required fields missing" },
+        { status: 400 }
+      );
+    }
+
     if (body.cookingMode === "order-online") {
-      delete body.recipe;
+      body.recipe = undefined;
     }
 
-    // Safety: agar cook-yourself hai to orderInfo hata do
     if (body.cookingMode === "cook-yourself") {
-      delete body.orderInfo;
+      body.orderInfo = undefined;
     }
 
-   const food = new Food(body);
-    const savedFood = await food.save();
-    console.log("Saved food:", savedFood);
+    const food = await Food.create(body);
 
     return Response.json(
-      {
-        success: true,
-        data: savedFood,
-      },
+      { success: true, data: food },
       { status: 201 }
     );
   } catch (error) {
-    console.error("POST ERROR:", error);
     return Response.json(
-      {
-        success: false,
-        message: error.message,
-      },
+      { success: false, message: error.message },
       { status: 500 }
     );
   }
 }
+
 export async function GET(req) {
   try {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get("search");
-
+    
     let query = {};
 
     const name = searchParams.get("name");
@@ -79,6 +78,23 @@ export async function GET(req) {
       query.mood = { $in: mood };
     }
 
+    // filter by ingredients (must contain all selected)
+    const ingredients = searchParams.getAll("ingredients");
+    if (ingredients.length > 0) {
+      query.ingredients = { $all: ingredients };
+    }
+
+    // filter by restricted ingredients (exclude foods that contain any of these)
+    const restrictedIngredients = searchParams.getAll("restrictedIngredients");
+    if (restrictedIngredients.length > 0) {
+      query.restrictedIngredients = { $nin: restrictedIngredients };
+    }
+
+    const cookingMode = searchParams.get("cookingMode");
+    if (cookingMode) {
+      query.cookingMode = cookingMode;
+    }
+
     const cookTime = searchParams.getAll("cookTime");
     if (cookTime.length > 0) {
       const timeRanges = cookTime
@@ -106,8 +122,10 @@ export async function GET(req) {
       }
     }
 
+    // exclude price field from response in case legacy documents still have it
     const foods = await Food.find(query)
       .sort({ createdAt: -1 })
+      .select("-price")
       .lean();
 
     return Response.json({

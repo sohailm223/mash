@@ -8,13 +8,13 @@ export default function FoodForm({ onFormSubmitSuccess }) {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
+    image: "",
     mealTiming: [],
     dietType: [],
     healthGoals: [],
     foodStyle: "",
     cuisine: "", // Will be string, converted to array on submit
     cookTime: 0,
-    price: 0,
     mood: [],
     ingredients: "", // Will be string, converted to array on submit
     restrictedIngredients: "", // Will be string, converted to array on submit
@@ -55,6 +55,17 @@ export default function FoodForm({ onFormSubmitSuccess }) {
         ...prev,
         [name]: type === "number" ? Number(value) : value,
       }));
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, image: reader.result }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -125,6 +136,13 @@ export default function FoodForm({ onFormSubmitSuccess }) {
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
             <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+          </div>
+          <div>
+            <label htmlFor="image" className="block text-sm font-medium text-gray-700">Image</label>
+            <input type="file" accept="image/*" id="image" onChange={handleImageChange} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+            {formData.image && (
+              <img src={formData.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded-md" />
+            )}
           </div>
           <div>
             <label htmlFor="foodStyle" className="block text-sm font-medium text-gray-700">Food Style</label>
@@ -230,10 +248,6 @@ export default function FoodForm({ onFormSubmitSuccess }) {
             <label htmlFor="cookTime" className="block text-sm font-medium text-gray-700">Cook Time (min)</label>
             <input type="number" name="cookTime" id="cookTime" value={formData.cookTime} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
           </div>
-          <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700">Price (₹)</label>
-            <input type="number" name="price" id="price" value={formData.price} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-          </div>
           <div className="md:col-span-2">
             <label htmlFor="ingredients" className="block text-sm font-medium text-gray-700">Main Ingredients (comma-separated)</label>
             <textarea name="ingredients" id="ingredients" rows="3" value={formData.ingredients} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
@@ -290,6 +304,26 @@ export default function FoodForm({ onFormSubmitSuccess }) {
             <div>
               <label htmlFor="recipe.steps" className="block text-sm font-medium text-gray-700">Recipe Steps (comma-separated)</label>
               <textarea name="recipe.steps" id="recipe.steps" rows="5" value={formData.recipe.steps} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
+            </div>
+          </div>
+        )}
+
+        {formData.cookingMode === "order-online" && (
+          <div className="mt-6 space-y-4">
+            <h3 className="text-lg font-medium">Order Details 🛵</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label htmlFor="orderInfo.deliveryTime" className="block text-sm font-medium text-gray-700">Delivery Time (min)</label>
+                <input type="number" name="orderInfo.deliveryTime" id="orderInfo.deliveryTime" value={formData.orderInfo.deliveryTime} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+              </div>
+              <div>
+                <label htmlFor="orderInfo.swiggyLink" className="block text-sm font-medium text-gray-700">Swiggy Link</label>
+                <input type="text" name="orderInfo.swiggyLink" id="orderInfo.swiggyLink" value={formData.orderInfo.swiggyLink} onChange={handleChange} placeholder="https://swiggy.com/..." className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+              </div>
+              <div>
+                <label htmlFor="orderInfo.zomatoLink" className="block text-sm font-medium text-gray-700">Zomato Link</label>
+                <input type="text" name="orderInfo.zomatoLink" id="orderInfo.zomatoLink" value={formData.orderInfo.zomatoLink} onChange={handleChange} placeholder="https://zomato.com/..." className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+              </div>
             </div>
           </div>
         )}

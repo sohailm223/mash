@@ -1,19 +1,44 @@
 "use client";
 
-export default function Modal({ isOpen, onClose, children }) {
+import { useEffect } from "react";
+import { X } from "lucide-react";
+
+const Modal = ({ isOpen, onClose, children }) => {
+  useEffect(() => {
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleEsc);
+      // Prevent scrolling on the body when modal is open
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-start pt-10">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+      <div className="absolute inset-0" onClick={onClose}></div>
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl z-10">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold"
+          className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors"
         >
-          &times;
+          <X className="w-6 h-6 text-gray-500" />
         </button>
-        {children}
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
-}
+};
+
+export default Modal;

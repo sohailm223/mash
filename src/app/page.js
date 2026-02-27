@@ -2,34 +2,37 @@
 
 import { useState, useEffect, useCallback } from "react";
 import FoodAdd from "@/components/FoodAdd";
-import FoodFilter from "@/components/FoodFilter";
-import { getFoods } from "../components/api"
-import FoodCard from "@/components/FoodCard";
+import FoodFilter from "@/components/filters/FoodFilter";
+import { getFoods } from "../components/api";
+import FoodCard from "@/components/cards/FoodCard";
 
 export default function Home() {
   const [foods, setFoods] = useState([]);
+  // Initialize cuisine as a string "" because it's a text input in FoodFilter
   const [filters, setFilters] = useState({
-    name: "",
     dietType: [],
     healthGoals: [],
-    cuisine: "",
+    cuisine: "", 
     mealTiming: [],
     mood: [],
     cookTime: [],
+    ingredients: [],
+    restrictedIngredients: [],
+    cookingMode: "",
   });
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isInitial, setIsInitial] = useState(true);
 
+  const handleFilterChange = (newFilters) => {
+    setIsInitial(false);
+    setFilters(newFilters);
+  };
+
+  // Use useCallback to define the function correctly
   const fetchFoods = useCallback(async () => {
-    // Check if any filter is active
-    const hasActiveFilters = Object.keys(filters).some((key) => {
-      const value = filters[key];
-      return Array.isArray(value) ? value.length > 0 : !!value;
-    });
-
-    if (!hasActiveFilters) {
+    if (isInitial) {
       setFoods([]);
-      setHasSearched(false);
       return;
     }
 
@@ -40,11 +43,15 @@ export default function Home() {
       for (const key in filters) {
         const value = filters[key];
         if (Array.isArray(value)) {
-          value.forEach((v) => params.append(key, v));
+          if (value.length > 0) {
+            value.forEach((v) => params.append(key, v));
+          }
         } else if (value) {
           params.append(key, value);
         }
       }
+      
+      // Even if params is empty, we fetch to show "All Products"
       const data = await getFoods(params.toString());
       setFoods(data || []);
     } catch (error) {
@@ -52,28 +59,47 @@ export default function Home() {
       setFoods([]);
     }
     setLoading(false);
-  }, [filters]);
+  }, [filters, isInitial]);
 
+  // Debounce effect to trigger fetch when filters change
   useEffect(() => {
-    fetchFoods();
+    const delayDebounce = setTimeout(() => {
+      fetchFoods();
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
   }, [fetchFoods]);
+
+  const handleFoodAddSuccess = () => {
+    setIsInitial(false);
+    fetchFoods();
+  };
 
   return (
     <div className="p-10">
       <div className="flex justify-between items-center mb-5">
         <h1 className="text-2xl font-bold">MealMind 🍽️</h1>
-        <FoodAdd onSuccess={fetchFoods} />
+        <FoodAdd onSuccess={handleFoodAddSuccess} />
       </div>
 
-      <FoodFilter filters={filters} setFilters={setFilters} />
+      {/* Pass 'foods' here so the filter component can show counts */}
+      <FoodFilter filters={filters} setFilters={handleFilterChange} foods={foods} />
 
       {loading ? (
         <p>Loading...</p>
       ) : foods.length > 0 ? (
-        foods.map((food) => <FoodCard key={food._id} food={food} />)
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {foods.map((food) => (
+            <FoodCard key={food._id} food={food} />
+          ))}
+        </div>
       ) : (
         <p className="text-center text-gray-500 mt-10">
-          {hasSearched ? "No food items found matching your criteria." : "Select filters to see food recommendations 🥗"}
+          {isInitial
+            ? "Select filters or click 'All Products' to see food recommendations 🥗"
+            : hasSearched
+            ? "No food items found matching your criteria."
+            : "Loading products..."}
         </p>
       )}
     </div>
