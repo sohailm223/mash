@@ -23,6 +23,7 @@ export default async function Home() {
           <p>Calories: {food.calories}</p>
         </div>
       ))}
+      
     </div>
   );
 }
