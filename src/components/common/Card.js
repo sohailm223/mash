@@ -1,10 +1,19 @@
-export default function Card({ children, className = "", ...props }) {
+export function Card({ children, className = "" }) {
   return (
-    <div
-      className={`group border rounded-xl shadow-sm bg-white overflow-hidden hover:shadow-xl transition-all duration-300 mb-6 flex flex-col h-full transform hover:-translate-y-1 ${className}`}
-      {...props}
-    >
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}>
       {children}
     </div>
   );
+}
+
+export function CardHeader({ children, className = "" }) {
+  return <div className={`px-6 py-4 border-b border-gray-100 ${className}`}>{children}</div>;
+}
+
+export function CardTitle({ children, className = "" }) {
+  return <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>{children}</h3>;
+}
+
+export function CardContent({ children, className = "" }) {
+  return <div className={`p-6 ${className}`}>{children}</div>;
 }

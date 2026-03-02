@@ -1,17 +1,14 @@
 import connectDB from "@/lib/db";
 import Food from "@/models/Food";
+import mongoose from "mongoose";
 
 export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
+    console.log("Received POST body:", body);
 
-    // remove price from payload if present – field has been deprecated
-    if (body.price !== undefined) {
-      delete body.price;
-    }
-
-    if (!body.name || !body.image || !body.cookingMode) {
+    if (!body.name || !body.image) {
       return Response.json(
         { success: false, message: "Required fields missing" },
         { status: 400 }
@@ -40,6 +37,12 @@ export async function POST(req) {
   }
 }
 
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+
+
 export async function GET(req) {
   try {
     await connectDB();
@@ -50,7 +53,7 @@ export async function GET(req) {
 
     const name = searchParams.get("name");
     if (name) {
-      query.name = new RegExp(name, "i");
+      query.name = new RegExp(escapeRegExp(name), "i");
     }
 
     const dietType = searchParams.getAll("dietType");
@@ -65,7 +68,7 @@ export async function GET(req) {
 
     const cuisine = searchParams.get("cuisine");
     if (cuisine) {
-      query.cuisine = new RegExp(cuisine, "i");
+      query.cuisine = new RegExp(escapeRegExp(cuisine), "i");
     }
 
     const mealTiming = searchParams.getAll("mealTiming");
@@ -95,33 +98,52 @@ export async function GET(req) {
       query.cookingMode = cookingMode;
     }
 
+    const cookTimeRangesMap = {
+      "0-15 min": { $gte: 0, $lte: 15 },
+      "15-30 min": { $gte: 15, $lte: 30 },
+      "30-60 min": { $gte: 30, $lte: 60 },
+      "60+ min": { $gte: 60 },
+    };
+
     const cookTime = searchParams.getAll("cookTime");
     if (cookTime.length > 0) {
       const timeRanges = cookTime
-        .map((range) => {
-          if (range === "0-15 min") {
-            return { cookTime: { $gte: 0, $lte: 15 } };
-          }
-          if (range === "15-30 min") {
-            return { cookTime: { $gte: 15, $lte: 30 } };
-          }
-          if (range === "30-60 min") {
-            return { cookTime: { $gte: 30, $lte: 60 } };
-          }
-          if (range === "60+ min") {
-            return { cookTime: { $gte: 60 } };
-          }
-          return null;
-        })
-        .filter(Boolean); // remove nulls
+        .map((range) =>
+          cookTimeRangesMap[range]
+            ? { cookTime: cookTimeRangesMap[range] }
+            : null
+        )
+        .filter(Boolean);
 
       if (timeRanges.length > 0) {
-        // Add an $or condition for the selected time ranges
-        // This will be combined with other filters using an implicit AND
         query.$or = timeRanges;
       }
     }
 
+    // if caller asked for a random result, return a single random document
+    if (searchParams.get("random")) {
+      const excludeIds = searchParams.getAll("exclude");
+      const validExcludeObjectIds = excludeIds
+        .map((id) => {
+          if (mongoose.Types.ObjectId.isValid(id)) {
+            return new mongoose.Types.ObjectId(id);
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      if (validExcludeObjectIds.length > 0) {
+        query._id = { $nin: validExcludeObjectIds };
+      }
+      const randomDocs = await Food.aggregate([
+        { $match: query },
+        { $sample: { size: 1 } },
+      ]);
+      const item = randomDocs[0] || null;
+      return Response.json({ success: true, data: item });
+    }
+
+    // otherwise normal list response
     // exclude price field from response in case legacy documents still have it
     const foods = await Food.find(query)
       .sort({ createdAt: -1 })

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Clock, Flame, Utensils } from "lucide-react";
-import Card from "../common/Card";
+import { Card } from "../common/Card";
 
 const FoodCard = ({ food }) => {
   const [imgSrc, setImgSrc] = useState(food.image);
@@ -31,6 +31,11 @@ const FoodCard = ({ food }) => {
             {food.name}
           </h2>
         </div>
+        {food.description && (
+          <p className="text-sm text-gray-600 mb-3 line-clamp-3">
+            {food.description}
+          </p>
+        )}
 
         {/* Quick Stats */}
         <div className="flex flex-wrap gap-2 mb-4">

@@ -2,338 +2,365 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Upload, Save, X, ChefHat, Clock, Activity, Utensils, Flame, ChevronDown, ChevronUp } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/Card";
+import { Button } from "@/components/common/Button";
+import { Input, TextArea } from "@/components/common/Input";
+import { CheckboxGroup } from "@/components/common/CheckboxGroup";
 import { addFood } from "./api";
+
+const MEAL_TIMINGS = ["Breakfast", "Lunch", "Snacks", "Dinner"];
+const DIET_TYPES = ["Vegetarian", "Non-Vegetarian", "Vegan", "Gluten-Free"];
+const HEALTH_GOALS = ["Weight Loss", "Weight Gain", "Muscle Building", "General Fitness"];
+const MOODS = ["Happy", "Sad", "Stressed", "Celebratory", "Comfort"];
 
 export default function FoodForm({ onFormSubmitSuccess }) {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [showPrepDetails, setShowPrepDetails] = useState(false);
+  const [showRecipeDetails, setShowRecipeDetails] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    image: "",
+    image: null,
+    price: "",
+    cuisine: "",
     mealTiming: [],
     dietType: [],
     healthGoals: [],
-    foodStyle: "",
-    cuisine: "", // Will be string, converted to array on submit
-    cookTime: 0,
     mood: [],
-    ingredients: "", // Will be string, converted to array on submit
-    restrictedIngredients: "", // Will be string, converted to array on submit
-    cookingMode: "cook-yourself",
-    recipe: {
-      ingredients: "", // Will be string, converted to array on submit
-      steps: "", // Will be string, converted to array on submit
-    },
-    nutrition: {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-    },
-    orderInfo: {
-      swiggyLink: "",
-      zomatoLink: "",
-      deliveryTime: 0,
-    },
+    cookTime: "",
+    ingredients: "",
+    restrictedIngredients: "",
+    calories: "",
+    protein: "",
+    carbs: "",
+    fat: "",
+    cookingMode: "Cook Yourself",
+    recipeIngredients: "",
+    recipeSteps: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-    if (name.includes(".")) {
-      const [parent, child] = name.split(".");
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: type === "number" ? Number(value) : value,
-        },
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: type === "number" ? Number(value) : value,
-      }));
+  const handleCheckboxChange = (key, newValue) => {
+    setFormData((prev) => ({ ...prev, [key]: newValue }));
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFormData((prev) => ({ ...prev, image: file }));
+      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, image: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCheckboxChange = (e) => {
-    const { name, value, checked } = e.target;
-    setFormData((prev) => {
-      const currentValues = prev[name] || [];
-      if (checked) {
-        return { ...prev, [name]: [...currentValues, value] };
-      } else {
-        return {
-          ...prev,
-          [name]: currentValues.filter((item) => item !== value),
-        };
-      }
-    });
+  const removeImage = () => {
+    setFormData((prev) => ({ ...prev, image: null }));
+    setPreviewUrl(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    // Helper to split string to array, trimming whitespace
-    const toArray = (str) =>
-      str.split(",").map((item) => item.trim()).filter(Boolean);
-
-    const payload = {
-      ...formData,
-      cuisine: toArray(formData.cuisine),
-      ingredients: toArray(formData.ingredients),
-      restrictedIngredients: toArray(formData.restrictedIngredients),
-      mood: formData.mood,
-      mealTiming: formData.mealTiming,
-      dietType: formData.dietType,
-      healthGoals: formData.healthGoals,
-      recipe: {
-        ...formData.recipe,
-        ingredients: toArray(formData.recipe.ingredients),
-        steps: toArray(formData.recipe.steps),
-      },
-    };
+    setLoading(true);
 
     try {
+      // 1. Convert Image to Base64 (string) if it exists
+      let imageBase64 = null;
+      if (formData.image instanceof File) {
+        imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(formData.image);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+        });
+      }
+
+      // 2. Prepare Payload for API
+      const payload = {
+        name: formData.name,
+        image: imageBase64, // Send base64 string
+        price: Number(formData.price) || 0,
+        cuisine: formData.cuisine.split(",").map((s) => s.trim()).filter(Boolean),
+        mealTiming: formData.mealTiming,
+        dietType: formData.dietType,
+        healthGoals: formData.healthGoals,
+        mood: formData.mood,
+        cookTime: Number(formData.cookTime) || 0,
+        ingredients: formData.ingredients.split(",").map((s) => s.trim()).filter(Boolean),
+        restrictedIngredients: formData.restrictedIngredients.split(",").map((s) => s.trim()).filter(Boolean),
+        cookingMode: formData.cookingMode,
+        nutrition: {
+          calories: Number(formData.calories) || 0,
+          protein: Number(formData.protein) || 0,
+          carbs: Number(formData.carbs) || 0,
+          fat: Number(formData.fat) || 0,
+        },
+        recipe: {
+          ingredients: formData.recipeIngredients.split("\n").filter(Boolean),
+          steps: formData.recipeSteps.split("\n").filter(Boolean),
+        },
+      };
+
       await addFood(payload);
-      alert("Food item added successfully!");
+
       if (onFormSubmitSuccess) {
         onFormSubmitSuccess();
       }
-    } catch (err) {
-      setError(err.message);
-      console.error("Submission error:", err);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert("Failed to save food. Please try again.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const mealTimings = ["Breakfast", "Lunch", "Snacks", "Dinner"];
-  const dietTypes = ["Vegetarian", "Non-Vegetarian", "Vegan", "Gluten-Free"];
-  const healthGoals = ["Weight Loss", "Weight Gain", "Muscle Building", "General Fitness"];
-  const moods = ["Happy", "Sad", "Stressed", "Celebratory", "Comfort"];
+  const toggleCategory = (category) => {
+    setActiveCategory(activeCategory === category ? null : category);
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="p-4 border rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
-            <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-          </div>
-          <div>
-            <label htmlFor="image" className="block text-sm font-medium text-gray-700">Image</label>
-            <input type="file" accept="image/*" id="image" onChange={handleImageChange} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-            {formData.image && (
-              <img src={formData.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded-md" />
-            )}
-          </div>
-          <div>
-            <label htmlFor="foodStyle" className="block text-sm font-medium text-gray-700">Food Style</label>
-            <input type="text" name="foodStyle" id="foodStyle" value={formData.foodStyle} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-          </div>
-          <div>
-            <label htmlFor="cuisine" className="block text-sm font-medium text-gray-700">Cuisine (comma-separated)</label>
-            <input type="text" name="cuisine" id="cuisine" value={formData.cuisine} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 border rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">Categorization</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Meal Timing</label>
-            <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-              {mealTimings.map((timing) => (
-                <div key={timing} className="flex items-center">
-                  <input
-                    id={`meal-${timing}`}
-                    name="mealTiming"
-                    type="checkbox"
-                    value={timing}
-                    onChange={handleCheckboxChange}
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <label htmlFor={`meal-${timing}`} className="ml-2 block text-sm text-gray-900">
-                    {timing}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Diet Type</label>
-            <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-              {dietTypes.map((diet) => (
-                <div key={diet} className="flex items-center">
-                  <input
-                    id={`diet-${diet}`}
-                    name="dietType"
-                    type="checkbox"
-                    value={diet}
-                    onChange={handleCheckboxChange}
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <label htmlFor={`diet-${diet}`} className="ml-2 block text-sm text-gray-900">
-                    {diet}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Health Goals</label>
-            <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-              {healthGoals.map((goal) => (
-                <div key={goal} className="flex items-center">
-                  <input
-                    id={`goal-${goal}`}
-                    name="healthGoals"
-                    type="checkbox"
-                    value={goal}
-                    onChange={handleCheckboxChange}
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <label htmlFor={`goal-${goal}`} className="ml-2 block text-sm text-gray-900">
-                    {goal}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Mood</label>
-            <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-              {moods.map((mood) => (
-                <div key={mood} className="flex items-center">
-                  <input
-                    id={`mood-${mood}`}
-                    name="mood"
-                    type="checkbox"
-                    value={mood}
-                    onChange={handleCheckboxChange}
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <label htmlFor={`mood-${mood}`} className="ml-2 block text-sm text-gray-900">
-                    {mood}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 border rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="cookTime" className="block text-sm font-medium text-gray-700">Cook Time (min)</label>
-            <input type="number" name="cookTime" id="cookTime" value={formData.cookTime} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-          </div>
-          <div className="md:col-span-2">
-            <label htmlFor="ingredients" className="block text-sm font-medium text-gray-700">Main Ingredients (comma-separated)</label>
-            <textarea name="ingredients" id="ingredients" rows="3" value={formData.ingredients} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
-          </div>
-          <div className="md:col-span-2">
-            <label htmlFor="restrictedIngredients" className="block text-sm font-medium text-gray-700">Restricted Ingredients (comma-separated)</label>
-            <textarea name="restrictedIngredients" id="restrictedIngredients" rows="3" value={formData.restrictedIngredients} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 border rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">Nutrition</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <label htmlFor="nutrition.calories" className="block text-sm font-medium text-gray-700">Calories</label>
-            <input type="number" name="nutrition.calories" id="nutrition.calories" value={formData.nutrition.calories} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-          </div>
-          <div>
-            <label htmlFor="nutrition.protein" className="block text-sm font-medium text-gray-700">Protein (g)</label>
-            <input type="number" name="nutrition.protein" id="nutrition.protein" value={formData.nutrition.protein} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-          </div>
-          <div>
-            <label htmlFor="nutrition.carbs" className="block text-sm font-medium text-gray-700">Carbs (g)</label>
-            <input type="number" name="nutrition.carbs" id="nutrition.carbs" value={formData.nutrition.carbs} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-          </div>
-          <div>
-            <label htmlFor="nutrition.fat" className="block text-sm font-medium text-gray-700">Fat (g)</label>
-            <input type="number" name="nutrition.fat" id="nutrition.fat" value={formData.nutrition.fat} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 border rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">Cooking Mode</h2>
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center">
-            <input id="cook-yourself" name="cookingMode" type="radio" value="cook-yourself" checked={formData.cookingMode === 'cook-yourself'} onChange={handleChange} className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500" />
-            <label htmlFor="cook-yourself" className="ml-2 block text-sm font-medium text-gray-700">Cook Yourself</label>
-          </div>
-          <div className="flex items-center">
-            <input id="order-online" name="cookingMode" type="radio" value="order-online" checked={formData.cookingMode === 'order-online'} onChange={handleChange} className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500" />
-            <label htmlFor="order-online" className="ml-2 block text-sm font-medium text-gray-700">Order Online</label>
-          </div>
-        </div>
-
-        {formData.cookingMode === 'cook-yourself' && (
-          <div className="mt-6 space-y-4">
-            <h3 className="text-lg font-medium">Recipe Details 👨‍🍳</h3>
-            <div>
-              <label htmlFor="recipe.ingredients" className="block text-sm font-medium text-gray-700">Recipe Ingredients (comma-separated)</label>
-              <textarea name="recipe.ingredients" id="recipe.ingredients" rows="3" value={formData.recipe.ingredients} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
-            </div>
-            <div>
-              <label htmlFor="recipe.steps" className="block text-sm font-medium text-gray-700">Recipe Steps (comma-separated)</label>
-              <textarea name="recipe.steps" id="recipe.steps" rows="5" value={formData.recipe.steps} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
-            </div>
-          </div>
-        )}
-
-        {formData.cookingMode === "order-online" && (
-          <div className="mt-6 space-y-4">
-            <h3 className="text-lg font-medium">Order Details 🛵</h3>
-            <div className="grid grid-cols-1 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Basic Information */}
+      <Card className="border-t-4 border-t-indigo-500">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Utensils className="w-6 h-6 text-indigo-600" /> Basic Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <Input 
+                label="Food Name" 
+                name="name" 
+                value={formData.name} 
+                onChange={handleChange} 
+                placeholder="e.g. Grilled Chicken Salad" 
+                required 
+                className="text-lg"
+              />
+              <Input 
+                label="Cuisine" 
+                name="cuisine" 
+                value={formData.cuisine} 
+                onChange={handleChange} 
+                placeholder="e.g. Italian, Mexican (comma separated)" 
+              />
+              <Input 
+                label="Price (₹)" 
+                name="price" 
+                type="number"
+                value={formData.price} 
+                onChange={handleChange} 
+                placeholder="e.g. 250" 
+              />
+              
               <div>
-                <label htmlFor="orderInfo.deliveryTime" className="block text-sm font-medium text-gray-700">Delivery Time (min)</label>
-                <input type="number" name="orderInfo.deliveryTime" id="orderInfo.deliveryTime" value={formData.orderInfo.deliveryTime} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+                <label className="block text-sm font-medium text-gray-700 mb-3">Cooking Mode</label>
+                <div className="grid grid-cols-2 gap-4">
+                  {["Cook Yourself", "Order Online"].map((mode) => (
+                    <label 
+                      key={mode} 
+                      className={`
+                        relative flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all
+                        ${formData.cookingMode === mode 
+                          ? "border-indigo-600 bg-indigo-50 text-indigo-700" 
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600"}
+                      `}
+                    >
+                      <input 
+                        type="radio" 
+                        name="cookingMode" 
+                        value={mode} 
+                        checked={formData.cookingMode === mode} 
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      {mode === "Cook Yourself" ? <ChefHat className="w-6 h-6 mb-2" /> : <Utensils className="w-6 h-6 mb-2" />}
+                      <span className="font-medium text-sm">{mode}</span>
+                      {formData.cookingMode === mode && (
+                        <div className="absolute top-2 right-2 w-2 h-2 bg-indigo-600 rounded-full"></div>
+                      )}
+                    </label>
+                  ))}
+                </div>
               </div>
-              <div>
-                <label htmlFor="orderInfo.swiggyLink" className="block text-sm font-medium text-gray-700">Swiggy Link</label>
-                <input type="text" name="orderInfo.swiggyLink" id="orderInfo.swiggyLink" value={formData.orderInfo.swiggyLink} onChange={handleChange} placeholder="https://swiggy.com/..." className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-              </div>
-              <div>
-                <label htmlFor="orderInfo.zomatoLink" className="block text-sm font-medium text-gray-700">Zomato Link</label>
-                <input type="text" name="orderInfo.zomatoLink" id="orderInfo.zomatoLink" value={formData.orderInfo.zomatoLink} onChange={handleChange} placeholder="https://zomato.com/..." className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Food Image</label>
+              <div className={`
+                relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-xl transition-colors overflow-hidden
+                ${previewUrl ? "border-indigo-300 bg-gray-50" : "border-gray-300 hover:bg-gray-50"}
+              `}>
+                {previewUrl ? (
+                  <>
+                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <button 
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur-sm rounded-full text-gray-600 hover:text-red-600 shadow-sm transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6 text-gray-500">
+                      <div className="p-4 bg-indigo-50 rounded-full mb-3">
+                        <Upload className="w-8 h-8 text-indigo-500" />
+                      </div>
+                      <p className="mb-1 text-sm font-medium text-gray-900">Click to upload image</p>
+                      <p className="text-xs text-gray-500">SVG, PNG, JPG or GIF (max. 2MB)</p>
+                    </div>
+                    <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+                  </label>
+                )}
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="flex justify-end items-center">
-        {error && <p className="text-red-500 text-sm mr-4">{error}</p>}
-        <button type="submit" disabled={isLoading} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400">
-          {isLoading ? "Adding..." : "Add Food"}
+      {/* Categorization */}
+      <Card className="overflow-visible">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Activity className="w-6 h-6 text-indigo-600" /> Categorization
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { id: "mealTiming", label: "Meal Timing", options: MEAL_TIMINGS },
+              { id: "dietType", label: "Diet Type", options: DIET_TYPES },
+              { id: "healthGoals", label: "Health Goals", options: HEALTH_GOALS },
+              { id: "mood", label: "Mood", options: MOODS },
+            ].map((cat) => (
+              <div key={cat.id} className="relative">
+                <button
+                  type="button"
+                  onClick={() => toggleCategory(cat.id)}
+                  className={`w-full flex items-center justify-between px-4 py-3 border rounded-xl transition-all ${
+                    activeCategory === cat.id
+                      ? "ring-2 ring-indigo-500 border-transparent bg-indigo-50"
+                      : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold text-gray-700 text-sm">{cat.label}</span>
+                    {formData[cat.id].length > 0 && (
+                      <span className="text-xs text-indigo-600 font-medium">
+                        {formData[cat.id].length} selected
+                      </span>
+                    )}
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                      activeCategory === cat.id ? "rotate-180 text-indigo-600" : ""
+                    }`}
+                  />
+                </button>
+                {activeCategory === cat.id && (
+                  <div className="absolute left-0 right-0 z-20 mt-2 p-4 bg-white border border-gray-200 rounded-xl shadow-xl min-w-[280px]">
+                    <CheckboxGroup
+                      options={cat.options}
+                      value={formData[cat.id]}
+                      onChange={(val) => handleCheckboxChange(cat.id, val)}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Optional Preparation Details */}
+      <Card>
+        <button
+          type="button"
+          onClick={() => setShowPrepDetails(!showPrepDetails)}
+          className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors"
+        >
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Clock className="w-6 h-6 text-indigo-600" /> Preparation & Nutrition (Optional)
+          </CardTitle>
+          {showPrepDetails ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
         </button>
+        
+        {showPrepDetails && (
+          <CardContent className="border-t border-gray-100 pt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-5">
+                <h4 className="font-medium text-gray-900">Preparation</h4>
+                <Input label="Cook Time (min)" type="number" name="cookTime" value={formData.cookTime} onChange={handleChange} placeholder="e.g. 30" min="0" />
+                <TextArea label="Main Ingredients" name="ingredients" value={formData.ingredients} onChange={handleChange} placeholder="e.g. Chicken, Lettuce, Tomatoes (comma separated)" rows={3} />
+                <TextArea label="Restricted Ingredients" name="restrictedIngredients" value={formData.restrictedIngredients} onChange={handleChange} placeholder="e.g. Peanuts, Gluten (comma separated)" rows={3} />
+              </div>
+
+              <div className="space-y-6">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2"><Flame className="w-4 h-4 text-orange-500" /> Nutrition Facts</h4>
+                <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                  <Input label="Calories (kcal)" type="number" name="calories" value={formData.calories} onChange={handleChange} className="bg-white" placeholder="0" />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <Input label="Protein (g)" type="number" name="protein" value={formData.protein} onChange={handleChange} placeholder="0" />
+                  <Input label="Carbs (g)" type="number" name="carbs" value={formData.carbs} onChange={handleChange} placeholder="0" />
+                  <Input label="Fat (g)" type="number" name="fat" value={formData.fat} onChange={handleChange} placeholder="0" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Recipe Details */}
+      <Card>
+        <button
+          type="button"
+          onClick={() => setShowRecipeDetails(!showRecipeDetails)}
+          className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors"
+        >
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <ChefHat className="w-6 h-6 text-indigo-600" /> Recipe Instructions (Optional)
+          </CardTitle>
+          {showRecipeDetails ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+        </button>
+        
+        {showRecipeDetails && (
+          <CardContent className="border-t border-gray-100 pt-6 space-y-6">
+            <TextArea 
+              label="Recipe Ingredients (Detailed)" 
+              name="recipeIngredients" 
+              value={formData.recipeIngredients} 
+              onChange={handleChange} 
+              placeholder="e.g.&#10;1. 200g Chicken Breast&#10;2. 1 cup Lettuce&#10;3. 2 tbsp Olive Oil" 
+              rows={5} 
+              className="font-mono text-sm" 
+            />
+            <TextArea 
+              label="Step-by-Step Instructions" 
+              name="recipeSteps" 
+              value={formData.recipeSteps} 
+              onChange={handleChange} 
+              placeholder="e.g.&#10;1. Wash and chop the vegetables.&#10;2. Grill the chicken for 10 mins.&#10;3. Mix everything in a bowl." 
+              rows={6} 
+            />
+          </CardContent>
+        )}
+      </Card>
+
+      <div className="sticky bottom-0 z-10 bg-white/80 backdrop-blur-md p-4 -mx-4 md:mx-0 border-t border-gray-200 flex justify-end gap-4 rounded-t-xl">
+        <Button type="button" variant="secondary" onClick={() => router.back()} className="px-6">Cancel</Button>
+        <Button type="submit" isLoading={loading} className="min-w-[180px] px-6">
+          <Save className="w-4 h-4 mr-2" /> Save Food Item
+        </Button>
       </div>
     </form>
   );

@@ -25,7 +25,6 @@ const FoodSchema = new mongoose.Schema(
 
     cookTime: {
       type: Number,
-      required: true,
     },
 
     mood: [String],
