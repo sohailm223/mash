@@ -7,9 +7,20 @@ import FoodFilter from "@/components/filters/FoodFilter";
 import RandomPicker from "@/components/RandomPicker";
 import FoodDetails from "@/components/FoodDetails";
 import { getFoods, getProfile } from "../components/api";
-import FoodCard from "@/components/cards/FoodCard";
 import FoodRow from "@/components/FoodRow";
 import { Heart } from "lucide-react";
+
+  // const user ={
+  //   name: "John Doe",
+  //   email: "  test@gmai.com",
+  //   profileComplete: false,
+  //   questionnaire: [
+  //     { questionId: "dietType", answer: ["vegetarian"] },
+  //     { questionId: "healthGoals", answer: ["weightLoss"] },
+  //     { questionId: "cuisine", answer: ["italian"] },
+  //     { questionId: "mealTiming", answer: ["lunch"] },
+  //     { questionId: "mood", answer: ["energetic"] },
+  // }
 
 export default function Home() {
   const [foods, setFoods] = useState([]);
@@ -34,13 +45,16 @@ export default function Home() {
   const [hasSearched, setHasSearched] = useState(false);
   const [isInitial, setIsInitial] = useState(true);
 
-  // fetch profile data on mount
+  // fetch profile data on mount and track completion
+  const [profileComplete, setProfileComplete] = useState(true);
+
   useEffect(() => {
     async function loadProfile() {
       try {
         const res = await getProfile();
         if (res.success && res.data) {
           setLikedCount((res.data.likedFoods || []).length);
+          setProfileComplete(!!res.data.profileComplete);
         }
       } catch (e) {
         console.error("failed to load profile", e);
@@ -95,8 +109,25 @@ export default function Home() {
     return () => clearTimeout(delayDebounce);
   }, [fetchFoods]);
 
+
   return (
     <div className="p-10">
+      {/* onboarding banner shown when profile incomplete */}
+      {!profileComplete && (
+        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded">
+          <p className="mb-2">
+            You haven't completed the onboarding questionnaire yet.
+            Please fill it out so we can personalize your experience.
+          </p>
+          <button
+            onClick={() => router.push('/questionnaire')}
+            className="text-blue-600 underline"
+          >
+            Fill questionnaire
+          </button>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-5">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">MealMind 🍽️</h1>
@@ -145,33 +176,36 @@ export default function Home() {
           )}
         </div>
 
-        {/* right column: either selected item or random suggestion */}
-        <div className="lg:w-2/5">
-          <h2 className="text-xl font-semibold mb-4">
-            {selectedFood ? "Selected Food" : "Random Suggestion"}
-          </h2>
-          {selectedFood ? (
-            <FoodDetails
-              food={selectedFood}
-              onYes={() => {
-                setLikedCount((c) => c + 1);
-                setSelectedFood(null);
-                setRandomTrigger((t) => t + 1);
-              }}
-              onNo={() => {
-                setSelectedFood(null);
-                setRandomTrigger((t) => t + 1);
-              }}
-            />
-          ) : (
-            <RandomPicker
-              onLike={() => setLikedCount((c) => c + 1)}
-              onDislike={() => setRandomTrigger((t) => t + 1)}
-              key={randomTrigger}
-            />
-          )}
-        </div>
+        {/* right column: either selected item or random suggestion. only show after first search */}
+        {!isInitial && (
+          <div className="lg:w-2/5">
+            <h2 className="text-xl font-semibold mb-4">
+              {selectedFood ? "Selected Food" : "Random Suggestion"}
+            </h2>
+            {selectedFood ? (
+              <FoodDetails
+                food={selectedFood}
+                onYes={() => {
+                  setLikedCount((c) => c + 1);
+                  setSelectedFood(null);
+                  setRandomTrigger((t) => t + 1);
+                }}
+                onNo={() => {
+                  setSelectedFood(null);
+                  setRandomTrigger((t) => t + 1);
+                }}
+              />
+            ) : (
+              <RandomPicker
+                onLike={() => setLikedCount((c) => c + 1)}
+                onDislike={() => setRandomTrigger((t) => t + 1)}
+                key={randomTrigger}
+              />
+            )}
+          </div>
+        )}
       </div>
+
     </div>
   );
 }

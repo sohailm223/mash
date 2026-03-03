@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.575.0",
     "mongoose": "^9.2.2",
     "next": "16.1.6",

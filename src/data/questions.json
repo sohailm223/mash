@@ -1,0 +1,99 @@
+[
+  {
+    "id": "q1",
+    "text": "What is your preferred meal time?",
+    "options": [
+      "Breakfast",
+      "Lunch",
+      "Dinner",
+      "Snacks"
+    ]
+  },
+  {
+    "id": "q2",
+    "text": "Do you follow any specific diet?",
+    "options": [
+      "Vegetarian",
+      "Vegan",
+      "Keto",
+      "No specific diet"
+    ]
+  },
+  {
+    "id": "q3",
+    "text": "How spicy do you like your food?",
+    "options": [
+      "Mild",
+      "Medium",
+      "Hot",
+      "Extra Hot"
+    ]
+  },
+  {
+    "id": "q4",
+    "text": "What is your biggest cooking obstacle?",
+    "options": [
+      "Time",
+      "Ingredients",
+      "Skill",
+      "Equipment"
+    ]
+  },
+  {
+    "id": "q5",
+    "text": "Which cuisine do you enjoy most?",
+    "options": [
+      "Italian",
+      "Chinese",
+      "Mexican",
+      "Indian",
+      "Other"
+    ]
+  },
+  {
+    "id": "q6",
+    "text": "How many meals do you cook at home each week?",
+    "options": [
+      "0–1",
+      "2–3",
+      "4–5",
+      "6+"
+    ]
+  },
+  {
+    "id": "q7",
+    "text": "Do you have any food allergies?",
+    "options": [
+      "Yes",
+      "No"
+    ]
+  },
+  {
+    "id": "q8",
+    "text": "How often do you try new recipes?",
+    "options": [
+      "Daily",
+      "Weekly",
+      "Monthly",
+      "Rarely"
+    ]
+  },
+  {
+    "id": "q9",
+    "text": "What motivates you to cook?",
+    "options": [
+      "Health",
+      "Taste",
+      "Budget",
+      "Fun"
+    ]
+  },
+  {
+    "id": "q10",
+    "text": "Would you like to receive personalized meal suggestions?",
+    "options": [
+      "Yes",
+      "No"
+    ]
+  }
+]

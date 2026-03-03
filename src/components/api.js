@@ -55,6 +55,7 @@ export async function getRandomFood(excludeIds = []) {
 export async function savePreference(foodId, action) {
   const res = await fetch("/api/users", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ foodId, action }),
   });
@@ -66,9 +67,62 @@ export async function savePreference(foodId, action) {
 }
 
 export async function getProfile() {
-  const res = await fetch("/api/users", { cache: "no-store" });
+  const res = await fetch("/api/users", { cache: "no-store", credentials: "include" });
   if (!res.ok) {
-    throw new Error("Failed to fetch profile");
+    // convert server error JSON if possible
+    try {
+      const err = await res.json();
+      return { success: false, ...err };
+    } catch {
+      return { success: false, message: "Failed to fetch profile" };
+    }
   }
+  return res.json();
+}
+
+// auth endpoints
+export async function register({ name, email, password }) {
+  const res = await fetch("/api/auth/register", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password }),
+  });
+  return res.json();
+}
+
+export async function login({ email, password }) {
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  return res.json();
+}
+
+export async function logout() {
+  const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+  return res.json();
+}
+
+// questionnaire management
+export async function submitQuestionnaire(answers) {
+  const res = await fetch("/api/users", {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ answers }),
+  });
+  return res.json();
+}
+
+export async function skipQuestionnaire() {
+  const res = await fetch("/api/users", {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ skip: true }),
+  });
   return res.json();
 }
