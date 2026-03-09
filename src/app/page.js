@@ -1,6 +1,7 @@
 import Link from "next/link";
 import FoodList from "@/components/FoodList";
 import Button from "@/components/ui/Button";
+import { getAutoMealTiming } from "@/lib/utils";
 
 async function getFoods(queryString = "") {
   // server components need an absolute URL when fetching internal APIs
@@ -9,6 +10,7 @@ async function getFoods(queryString = "") {
   const res = await fetch(url, { cache: "no-store" });
 
   if (!res.ok) {
+    console.error(`API call failed with status: ${res.status}`);
     throw new Error("Failed to fetch foods");
   }
 
@@ -20,12 +22,13 @@ const user = {
     email: "praha@gmail.com",
     profileComplete: true,
     questionnaire: [
-      { questionId: "dietType", answer: ["veg"] },
+      // { questionId: "mealTiming", answer: ["lunch"] },
       // { questionId: "healthGoals", answer: ["Weight Gain"] },
       // { questionId: "cuisine", answer: ["Indian"] }, 
       // { questionId: "mealTiming", answer: ["lunch"] },
       // { questionId: "mood", answer: ["Comfort"] },
       // { questionId: "mood", answer: ["excited"] },
+      // {questionId: "searchKeywords", answer: ["roti"]},
   
     ],
   };
@@ -34,20 +37,28 @@ export default async function Home() {
   // Process user preferences to build query string for the API
   const params = new URLSearchParams();
 
+  // 1. Apply User Preferences (Manual Override / Profile)
   user.questionnaire.forEach(preference => {
     const key = preference.questionId;
     const values = preference.answer;
     
-    if (values.length > 0) {
+    if (values && values.length > 0) {
       params.set(key, values.join(','));
     }
   });
 
-   console.log("Constructed query string:", params.toString());
-  console.log("User preferences:", user.questionnaire);
-  
+  // 2. System Auto Detect (Meal Timing)
+  // Logic: If user has NOT selected a meal timing, use system time.
+  if (!params.has("mealTiming")) {
+    const autoTiming = getAutoMealTiming();
+    const currentTime = new Date().toLocaleTimeString();
+    console.log(`System Auto-Detect: ${autoTiming} (Current Time: ${currentTime})`);
+    params.set("mealTiming", autoTiming);
+  }
+
   const queryString = params.toString();
   const isFiltered = queryString.length > 0;
+  
   console.log("Constructed query string:", queryString);
 
   // Fetch foods with the applied filters
@@ -61,7 +72,13 @@ export default async function Home() {
           <Button className="bg-green-600">Add New Food</Button>
         </Link>
       </div>
-       <FoodList initialFoods={foods} isFiltered={isFiltered} />
+      {foods && foods.length > 0 ? (
+        <FoodList initialFoods={foods} isFiltered={isFiltered} />
+      ) : (
+        <div className="text-center py-10">
+          <p className="text-gray-500">No food items found. Try changing your filters!</p>
+        </div>
+      )}
     </div>
   );
 }

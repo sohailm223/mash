@@ -115,7 +115,7 @@ export default function FoodList({ initialFoods, isFiltered }) {
                     {food.dietType?.map((d) => <span key={d} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full capitalize">{d}</span>)}
                     {food.healthGoals?.map((h) => <span key={h} className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full capitalize">{h}</span>)}
                     {food.mealTiming?.map((t) => <span key={t} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full capitalize">{t}</span>)}
-                    {food.occasion?.map((o) => <span key={o} className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full capitalize">{o}</span>)}
+                    {/* {food.occasion?.map((o) => <span key={o} className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full capitalize">{o}</span>)} */}
                   </div>
                 </div>
               </div>
@@ -217,10 +217,10 @@ export default function FoodList({ initialFoods, isFiltered }) {
                                 <span className="font-semibold block text-gray-700">Meal Timing</span>
                                 <div className="mt-1 text-gray-600 capitalize">{suggestedFood.mealTiming?.join(', ')}</div>
                             </div>
-                            <div>
+                            {/* <div>
                                 <span className="font-semibold block text-gray-700">Occasion</span>
                                 <div className="mt-1 text-gray-600 capitalize">{suggestedFood.occasion?.join(', ')}</div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
 

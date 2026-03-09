@@ -7,7 +7,7 @@ import {
   HEALTH_GOALS_OPTIONS,
   CUISINE_OPTIONS,
   MOOD_OPTIONS,
-  OCCASION_OPTIONS,
+  WEATHER_OPTIONS,
 } from "@/lib/constants";
 
 // Map field names to their valid options for validation/sanitization
@@ -18,7 +18,7 @@ const FIELD_VALIDATION = {
   healthGoals: HEALTH_GOALS_OPTIONS,
   cuisine: CUISINE_OPTIONS,
   mood: MOOD_OPTIONS,
-  occasion: OCCASION_OPTIONS,
+  weather: WEATHER_OPTIONS,
 };
 
 // A map to handle synonyms and expand search terms for robust filtering
@@ -44,7 +44,7 @@ export async function POST(req) {
     console.log("Incoming body:", body); 
 
     // Sanitize all array-based enum fields to ensure they are arrays of lowercase strings
-    const arrayFields = ['mealTiming', 'dietType', 'healthGoals', 'cuisine', 'mood', 'occasion'];
+    const arrayFields = ['mealTiming', 'dietType', 'healthGoals', 'cuisine', 'mood', 'weather', 'foodStyle', 'searchKeywords', 'ingredients'];
     
     arrayFields.forEach(field => {
       if (body[field]) {
@@ -77,7 +77,6 @@ export async function POST(req) {
       { message: error.message },
       { status: 500 }
     );
-    return Response.json({ message: error.message }, { status: 500 });
   }
 }
 
@@ -89,7 +88,7 @@ export async function GET(req) {
     const query = {};
 
     for (const [key, value] of searchParams.entries()) {
-      // Only process keys that are defined in our validation constants
+      // 1. Handle Enum Fields
       if (FIELD_VALIDATION[key]) {
         const inputValues = value.split(',').map(v => v.trim().toLowerCase().replace(/\s+/g, '-'));
         
@@ -106,6 +105,17 @@ export async function GET(req) {
         if (searchValues.size > 0) {
           query[key] = { $in: Array.from(searchValues) };
         }
+      }
+      
+      // 2. Handle Search Keywords / Ingredients (Bonus Feature)
+      if (key === 'search' || key === 'ingredients') {
+         const searchTerm = value.trim().toLowerCase();
+         // Search in name, searchKeywords, or ingredients
+         query.$or = [
+           { name: { $regex: searchTerm, $options: 'i' } },
+           { searchKeywords: { $regex: searchTerm, $options: 'i' } },
+           { ingredients: { $regex: searchTerm, $options: 'i' } }
+         ];
       }
     }
 

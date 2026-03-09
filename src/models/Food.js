@@ -6,7 +6,7 @@ import {
   HEALTH_GOALS_OPTIONS,
   CUISINE_OPTIONS,
   MOOD_OPTIONS,
-  OCCASION_OPTIONS,
+  WEATHER_OPTIONS,
 } from "@/lib/constants";
 
 const FoodSchema = new mongoose.Schema(
@@ -15,88 +15,77 @@ const FoodSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     image: { type: String, required: true },
     description: String,
+
+    // SEARCH KEYWORDS
+    searchKeywords: [String],
+
+    // CATEGORY
     category: {
       type: String,
       enum: CATEGORY_OPTIONS.map((c) => c.value),
     },
-    items: [String],
 
-    // 1 Meal Timing
+    // MEAL TIMING
     mealTiming: {
       type: [String],
       enum: MEAL_TIMING_OPTIONS,
     },
 
-    // 2 Diet Type
+    // DIET TYPE (Kept for robust filtering alongside Category)
     dietType: {
       type: [String],
       enum: DIET_TYPE_OPTIONS,
     },
 
-    // 3 Health Goals
+    // HEALTH GOALS
     healthGoals: {
       type: [String],
       enum: HEALTH_GOALS_OPTIONS,
     },
 
-    // 4 Food Style
-    foodStyle: {
-      type: String,
-      enum: [
-        "fast-food",
-        "home-style",
-        "street-food",
-        "restaurant-style",
-        "traditional",
-        "modern-fusion",
-      ],
-    },
-
-    // 5 Cuisine
+    // CUISINE
     cuisine: {
       type: [String],
       enum: CUISINE_OPTIONS,
     },
 
-    // 8 Mood Based
+    // INGREDIENT SEARCH
+    ingredients: [String],
+
+    // FOOD STYLE
+    foodStyle: {
+      type: [String],
+      enum: ["fast-food", "street-food", "home-style", "restaurant-style"],
+    },
+
+    // MOOD
     mood: {
       type: [String],
       enum: MOOD_OPTIONS,
     },
 
-    // 9 Ingredient Based
-
-    // 1. Cooking Mode
-    cookingMode: {
-      type: String,
-      enum: ["cook-yourself", "order-online"],
+    // WEATHER
+    weather: {
+      type: [String],
+      enum: WEATHER_OPTIONS,
     },
 
-    recipe: {
-      ingredients: [String],
-      steps: [String],
-    },
-
+    // NUTRITION
     nutrition: {
+      calories: Number,
       protein: Number,
       carbs: Number,
       fat: Number,
     },
 
+    // ORDER INFO
     orderInfo: {
       swiggyLink: String,
       zomatoLink: String,
       deliveryTime: Number,
     },
-
-    // 2. Occasion
-    occasion: {
-      type: [String],
-      enum: OCCASION_OPTIONS,
-    },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Food ||
-  mongoose.model("Food", FoodSchema);
+export default mongoose.models.Food || mongoose.model("Food", FoodSchema);

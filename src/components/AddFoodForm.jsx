@@ -12,7 +12,7 @@ import {
   HEALTH_GOALS_OPTIONS,
   CUISINE_OPTIONS,
   MOOD_OPTIONS,
-  OCCASION_OPTIONS,
+  // OCCASION_OPTIONS,
 } from "@/lib/constants";
 
 export default function AddFoodForm({ onAdded }) {
@@ -29,7 +29,7 @@ export default function AddFoodForm({ onAdded }) {
     healthGoals: "",
     cuisine: "",
     mood: "",
-    occasion: "",
+    // occasion: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);  const [previewUrl, setPreviewUrl] = useState(null);
@@ -71,7 +71,7 @@ export default function AddFoodForm({ onAdded }) {
     if (form.healthGoals) body.healthGoals = toArray(form.healthGoals);
     if (form.cuisine) body.cuisine = toArray(form.cuisine);
     if (form.mood) body.mood = toArray(form.mood);
-    if (form.occasion) body.occasion = toArray(form.occasion);
+    // if (form.occasion) body.occasion = toArray(form.occasion);
 
     // image handling: file -> base64, or if using URL use that directly
     if (form.useUrl && form.imageUrl) {
@@ -106,7 +106,7 @@ export default function AddFoodForm({ onAdded }) {
         healthGoals: "",
         cuisine: "",
         mood: "",
-        occasion: "",
+        // occasion: "",
       });
       setPreviewUrl(null);
 
@@ -348,7 +348,7 @@ export default function AddFoodForm({ onAdded }) {
             ))}
           </select>
         </div>
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium" htmlFor="occasion">
             Occasion
           </label>
@@ -364,7 +364,7 @@ export default function AddFoodForm({ onAdded }) {
               <option key={opt} value={opt}>{opt}</option>
             ))}
           </select>
-        </div>
+        </div> */}
       </div>
 
       {error && <p className="text-red-600">{error}</p>}
