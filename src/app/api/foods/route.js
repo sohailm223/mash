@@ -1,18 +1,18 @@
 import connectDB from "@/lib/db";
 import Food from "@/models/Food";
 import {
-  CATEGORY_OPTIONS,
   MEAL_TIMING_OPTIONS,
   DIET_TYPE_OPTIONS,
   HEALTH_GOALS_OPTIONS,
   CUISINE_OPTIONS,
   MOOD_OPTIONS,
   WEATHER_OPTIONS,
+  FOOD_STYLE_OPTIONS,
 } from "@/lib/constants";
 
 // Map field names to their valid options for validation/sanitization
 const FIELD_VALIDATION = {
-  category: CATEGORY_OPTIONS.map(c => c.value),
+  foodStyle: FOOD_STYLE_OPTIONS,
   mealTiming: MEAL_TIMING_OPTIONS,
   dietType: DIET_TYPE_OPTIONS,
   healthGoals: HEALTH_GOALS_OPTIONS,
@@ -111,11 +111,22 @@ export async function GET(req) {
       if (key === 'search' || key === 'ingredients') {
          const searchTerm = value.trim().toLowerCase();
          // Search in name, searchKeywords, or ingredients
-         query.$or = [
-           { name: { $regex: searchTerm, $options: 'i' } },
-           { searchKeywords: { $regex: searchTerm, $options: 'i' } },
-           { ingredients: { $regex: searchTerm, $options: 'i' } }
-         ];
+        // NO FILTER
+  if (searchTerm.startsWith("no ")) {
+
+    const ingredient = searchTerm.replace("no ", "").trim();
+
+    query.ingredients = { $nin: [ingredient] };
+
+  } else {
+
+    query.$or = [
+      { name: { $regex: searchTerm, $options: 'i' } },
+      { searchKeywords: { $regex: searchTerm, $options: 'i' } },
+      { ingredients: { $regex: searchTerm, $options: 'i' } }
+    ];
+
+  }
       }
     }
 

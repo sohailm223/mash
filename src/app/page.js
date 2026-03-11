@@ -1,7 +1,7 @@
 import Link from "next/link";
 import FoodList from "@/components/FoodList";
 import Button from "@/components/ui/Button";
-import { getAutoMealTiming } from "@/lib/utils";
+import { getAutoMealTiming, getAutoWeatherCondition } from "@/lib/utils";
 
 async function getFoods(queryString = "") {
   // server components need an absolute URL when fetching internal APIs
@@ -22,13 +22,18 @@ const user = {
     email: "praha@gmail.com",
     profileComplete: true,
     questionnaire: [
-      // { questionId: "mealTiming", answer: ["lunch"] },
+      // { questionId: "mealTiming", answer: ["dinner"] },
+      // { questionId: "dietType", answer: ["veg"] },
       // { questionId: "healthGoals", answer: ["Weight Gain"] },
       // { questionId: "cuisine", answer: ["Indian"] }, 
       // { questionId: "mealTiming", answer: ["lunch"] },
       // { questionId: "mood", answer: ["Comfort"] },
       // { questionId: "mood", answer: ["excited"] },
       // {questionId: "searchKeywords", answer: ["roti"]},
+      // {questionId: "foodStyle", answer: ["fast-food"]}
+      //  {questionId: "searchKeywords", answer: ["no onion"]},
+      // {questionId: "weather", answer: ["summer"]},
+
   
     ],
   };
@@ -54,6 +59,14 @@ export default async function Home() {
     const currentTime = new Date().toLocaleTimeString();
     console.log(`System Auto-Detect: ${autoTiming} (Current Time: ${currentTime})`);
     params.set("mealTiming", autoTiming);
+  }
+
+  // 3. System Auto Detect (Weather)
+  // Logic: If user has NOT selected a weather condition, use a default.
+  if (!params.has("weather")) {
+    const autoWeather = getAutoWeatherCondition();
+    console.log(`System Auto-Detect: ${autoWeather} (Weather)`);
+    params.set("weather", autoWeather);
   }
 
   const queryString = params.toString();

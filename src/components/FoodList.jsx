@@ -15,17 +15,21 @@ export default function FoodList({ initialFoods, isFiltered }) {
       try {
         setLoading(true);
         const res = await fetch('/api/foods');
+        console.log("API Response Status:", res);
         if (!res.ok) {
           throw new Error('Failed to fetch foods');
         }
         const data = await res.json();
         setFoods(data);
+        console.log("Total Foods:", data.length);
+        console.log("All Foods Data:", data);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     }
+  
 
     if (initialFoods !== undefined) {
       // If parent provides data (even an empty array), use it.
@@ -36,6 +40,11 @@ export default function FoodList({ initialFoods, isFiltered }) {
       fetchFoods();
     }
   }, [initialFoods]); // Re-run this logic if initialFoods prop changes.
+
+  useEffect(() => {
+    console.log("Updated Foods State:", foods);
+    console.log("Total Foods:", foods.length);
+  }, [foods]);
 
   // Effect: Select a random food when the list updates
   useEffect(() => {
@@ -89,6 +98,7 @@ export default function FoodList({ initialFoods, isFiltered }) {
   // VIEW 1: GRID VIEW (Jab koi filter nahi hai - All Foods)
   if (!isFiltered) {
     return (
+      console.log("foods in grid view: ",foods),
       <div className="container mx-auto">
         <h2 className="text-3xl font-bold text-center mb-8">All Food Menu</h2>
         {foods.length === 0 ? (
@@ -109,13 +119,15 @@ export default function FoodList({ initialFoods, isFiltered }) {
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-xl font-semibold">{food.name}</h3>
                   </div>
-                  <p className="text-gray-600 text-sm line-clamp-2 mb-3">{food.description}</p>
-                  <div className="flex flex-wrap gap-2">
+                  {food.description && <p className="text-gray-600 text-sm line-clamp-2 mb-3">{food.description}</p>}
+                  <div className="flex flex-wrap gap-2 mt-auto">
                     {food.cuisine?.map((c) => <span key={c} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full capitalize">{c}</span>)}
                     {food.dietType?.map((d) => <span key={d} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full capitalize">{d}</span>)}
                     {food.healthGoals?.map((h) => <span key={h} className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full capitalize">{h}</span>)}
                     {food.mealTiming?.map((t) => <span key={t} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full capitalize">{t}</span>)}
-                    {/* {food.occasion?.map((o) => <span key={o} className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full capitalize">{o}</span>)} */}
+                    {food.mood?.map((m) => <span key={m} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full capitalize">{m}</span>)}
+                    {food.weather?.map((w) => <span key={w} className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full capitalize">{w}</span>)}
+                    {food.foodStyle?.map((fs) => <span key={fs} className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full capitalize">{fs}</span>)}
                   </div>
                 </div>
               </div>
@@ -159,6 +171,7 @@ export default function FoodList({ initialFoods, isFiltered }) {
                   <div className="flex flex-wrap gap-1 mt-2">
                      {food.dietType?.map(d => <span key={d} className="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full capitalize">{d}</span>)}
                      {food.cuisine?.map(c => <span key={c} className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full capitalize">{c}</span>)}
+                     {food.mealTiming?.map(t => <span key={t} className="text-[10px] bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full capitalize">{t}</span>)}
                   </div>
                 </div>
               </div>
@@ -212,15 +225,44 @@ export default function FoodList({ initialFoods, isFiltered }) {
                             </div>
                         </div>
 
+                        <div>
+                            <span className="font-semibold block text-gray-700">Food Style</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                                {suggestedFood.foodStyle?.map(fs => <span key={fs} className="bg-pink-50 text-pink-700 px-2 py-1 rounded capitalize">{fs}</span>)}
+                            </div>
+                        </div>
+
+                        <div>
+                            <span className="font-semibold block text-gray-700">Weather</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                                {suggestedFood.weather?.map(w => <span key={w} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded capitalize">{w}</span>)}
+                            </div>
+                        </div>
+
+                        {suggestedFood.ingredients && suggestedFood.ingredients.length > 0 && (
+                            <div>
+                                <span className="font-semibold block text-gray-700">Ingredients</span>
+                                <p className="mt-1 text-gray-600 capitalize">{suggestedFood.ingredients.join(', ')}</p>
+                            </div>
+                        )}
+
+                        {suggestedFood.nutrition && (
+                            <div>
+                                <span className="font-semibold block text-gray-700">Nutrition (per serving)</span>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-gray-600">
+                                    <span>Calories: {suggestedFood.nutrition.calories || 'N/A'}</span>
+                                    <span>Protein: {suggestedFood.nutrition.protein || 'N/A'}g</span>
+                                    <span>Carbs: {suggestedFood.nutrition.carbs || 'N/A'}g</span>
+                                    <span>Fat: {suggestedFood.nutrition.fat || 'N/A'}g</span>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <span className="font-semibold block text-gray-700">Meal Timing</span>
                                 <div className="mt-1 text-gray-600 capitalize">{suggestedFood.mealTiming?.join(', ')}</div>
                             </div>
-                            {/* <div>
-                                <span className="font-semibold block text-gray-700">Occasion</span>
-                                <div className="mt-1 text-gray-600 capitalize">{suggestedFood.occasion?.join(', ')}</div>
-                            </div> */}
                         </div>
                     </div>
 

@@ -1,29 +1,14 @@
-export const CATEGORY_OPTIONS = [
-  { value: "vegetarian", label: "Vegetarian" },
-  { value: "non-vegetarian", label: "Non-Vegetarian" },
-  { value: "fast-food", label: "Fast Food" },
-  { value: "street-food", label: "Street Food" },
-  { value: "sweet-dishes", label: "Sweet Dishes" },
-  { value: "eggitarian", label: "Eggitarian" },
-];
-
-export const CATEGORY_ITEMS = {
-  vegetarian: ["Paneer Butter Masala", "Dal Makhani", "Malai Kofta", "Palak Paneer"],
-  "non-vegetarian": ["Butter Chicken", "Chicken Korma", "Fish Curry", "Mutton Rogan Josh"],
-  "fast-food": ["Pizza", "Burger", "French Fries", "Sandwich"],
-  "street-food": ["Pani Puri", "Vada Pav", "Dabeli", "Samosa Chaat"],
-  "sweet-dishes": ["Gulab Jamun", "Rasmalai", "Jalebi", "Gajar Ka Halwa"],
-  eggitarian: ["Egg Curry", "Omelette", "Egg Bhurji", "Scrambled Eggs"],
-};
-
+// MEAL TIMING
 export const MEAL_TIMING_OPTIONS = [
   "breakfast",
   "lunch",
+  "evening",
   "snacks",
   "dinner",
   "late-night",
 ];
 
+// DIET TYPE
 export const DIET_TYPE_OPTIONS = [
   "veg",
   "non-veg",
@@ -36,6 +21,7 @@ export const DIET_TYPE_OPTIONS = [
   "gluten-free",
 ];
 
+// HEALTH GOALS
 export const HEALTH_GOALS_OPTIONS = [
   "weight-loss",
   "weight-gain",
@@ -47,6 +33,7 @@ export const HEALTH_GOALS_OPTIONS = [
   "low-oil",
 ];
 
+// CUISINE
 export const CUISINE_OPTIONS = [
   "indian",
   "north-indian",
@@ -60,6 +47,18 @@ export const CUISINE_OPTIONS = [
   "korean",
 ];
 
+// FOOD STYLE
+export const FOOD_STYLE_OPTIONS = [
+  "fast-food",
+  "street-food",
+  "home-style",
+  "restaurant-style",
+  "traditional",
+  "modern",
+  "fusion",
+];
+
+// MOOD
 export const MOOD_OPTIONS = [
   "comfort",
   "spicy-craving",
@@ -73,4 +72,34 @@ export const MOOD_OPTIONS = [
   "energized",
 ];
 
-export const WEATHER_OPTIONS = ["summer", "winter", "rainy", "all-season"];
+// WEATHER
+export const WEATHER_OPTIONS = [
+  "summer",
+  "winter",
+  "rainy",
+  "all-season",
+];
+
+// INGREDIENT RESTRICTIONS
+export const INGREDIENT_RESTRICTION_OPTIONS = [
+  "no-onion",
+  "no-garlic",
+  "no-dairy",
+  "no-nuts",
+];
+
+// COOK TIME FILTER
+export const COOK_TIME_OPTIONS = [
+  "under-10",
+  "under-20",
+  "under-30",
+  "above-30",
+];
+
+// BUDGET FILTER
+export const BUDGET_OPTIONS = [
+  "under-50",
+  "50-150",
+  "150-300",
+  "premium",
+];

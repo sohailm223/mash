@@ -3,15 +3,15 @@
 import React, { useState } from "react";
 import Input from "./ui/Input";
 import Button from "./ui/Button";
-import CheckboxGroup from "./ui/CheckboxGroup";
 import {
-  CATEGORY_OPTIONS,
-  CATEGORY_ITEMS,
   MEAL_TIMING_OPTIONS,
   DIET_TYPE_OPTIONS,
   HEALTH_GOALS_OPTIONS,
   CUISINE_OPTIONS,
   MOOD_OPTIONS,
+  WEATHER_OPTIONS,
+  FOOD_STYLE_OPTIONS,
+  INGREDIENT_RESTRICTION_OPTIONS,
   // OCCASION_OPTIONS,
 } from "@/lib/constants";
 
@@ -23,12 +23,15 @@ export default function AddFoodForm({ onAdded }) {
     useUrl: false,          // toggle between upload and url
     description: "",
     category: "",
-    items: [],
+    items: "",
     mealTiming: "",
     dietType: "",
     healthGoals: "",
     cuisine: "",
     mood: "",
+    weather: "",
+    foodStyle: "",
+    restrictedIngredients: "",
     // occasion: "",
   });
   const [loading, setLoading] = useState(false);
@@ -62,15 +65,18 @@ export default function AddFoodForm({ onAdded }) {
     };
 
     if (form.category) body.category = form.category;
-    if (form.items && form.items.length) body.items = form.items;
 
     const toArray = (str) => str ? str.split(",").map((s) => s.trim().toLowerCase()) : [];
 
+    if (form.items) body.items = toArray(form.items);
     if (form.mealTiming) body.mealTiming = toArray(form.mealTiming);
     if (form.dietType) body.dietType = toArray(form.dietType);
     if (form.healthGoals) body.healthGoals = toArray(form.healthGoals);
     if (form.cuisine) body.cuisine = toArray(form.cuisine);
     if (form.mood) body.mood = toArray(form.mood);
+    if (form.weather) body.weather = toArray(form.weather);
+    if (form.foodStyle) body.foodStyle = toArray(form.foodStyle);
+    if (form.restrictedIngredients) body.restrictedIngredients = toArray(form.restrictedIngredients);
     // if (form.occasion) body.occasion = toArray(form.occasion);
 
     // image handling: file -> base64, or if using URL use that directly
@@ -100,12 +106,15 @@ export default function AddFoodForm({ onAdded }) {
         useUrl: false,
         description: "",
         category: "",
-        items: [],
+        items: "",
         mealTiming: "",
         dietType: "",
         healthGoals: "",
         cuisine: "",
         mood: "",
+        weather: "",
+        foodStyle: "",
+        restrictedIngredients: "",
         // occasion: "",
       });
       setPreviewUrl(null);
@@ -132,41 +141,20 @@ export default function AddFoodForm({ onAdded }) {
         required
       />
 
-      {/* category selector */}
-      <div>
-        <label className="block text-sm font-medium" htmlFor="category">
-          Category
-        </label>
-        <select
-          id="category"
-          name="category"
-          value={form.category}
-          onChange={(e) => {
-            handleChange(e);
-            setForm(f => ({ ...f, items: [] }));
-          }}
-          className="mt-1 block w-full border rounded px-2 py-1"
-        >
-          <option value="">-- choose --</option>
-          {CATEGORY_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Input
+        label="Category"
+        name="category"
+        value={form.category}
+        onChange={handleChange}
+      />
 
       {form.category && (
-        <div>
-          <label className="block text-sm font-medium">
-            Items in {CATEGORY_OPTIONS.find(o=>o.value===form.category)?.label}
-          </label>
-          <CheckboxGroup
-            options={CATEGORY_ITEMS[form.category] || []}
-            value={form.items}
-            onChange={(vals) => setForm(f => ({ ...f, items: vals }))}
-          />
-        </div>
+        <Input
+          label={`Items in ${form.category} (comma-separated)`}
+          name="items"
+          value={form.items}
+          onChange={handleChange}
+        />
       )}
 
       <div>
@@ -344,6 +332,57 @@ export default function AddFoodForm({ onAdded }) {
           >
             <option value="">-- choose --</option>
             {MEAL_TIMING_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium" htmlFor="weather">
+            Weather
+          </label>
+          <select
+            id="weather"
+            name="weather"
+            value={form.weather}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded px-2 py-1"
+          >
+            <option value="">-- choose --</option>
+            {WEATHER_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium" htmlFor="foodStyle">
+            Food Style
+          </label>
+          <select
+            id="foodStyle"
+            name="foodStyle"
+            value={form.foodStyle}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded px-2 py-1"
+          >
+            <option value="">-- choose --</option>
+            {FOOD_STYLE_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium" htmlFor="restrictedIngredients">
+            Restrictions (e.g. No Onion)
+          </label>
+          <select
+            id="restrictedIngredients"
+            name="restrictedIngredients"
+            value={form.restrictedIngredients}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded px-2 py-1"
+          >
+            <option value="">-- choose --</option>
+            {INGREDIENT_RESTRICTION_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
             ))}
           </select>
