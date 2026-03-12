@@ -2,7 +2,7 @@
 
 import AddFoodForm from "@/components/AddFoodForm";
 import { useRouter } from "next/navigation";
-import Button from "@/components/ui/Button";
+import Button from "@/components/commen/Button";
 
 export default function AddFoodPage() {
   const router = useRouter();

@@ -13,13 +13,29 @@ if (!cached) {
 }
 
 async function connectDB() {
-  if (cached.conn) return cached.conn;
-
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI);
+  if (cached.conn) {
+    console.log("🚀 Using cached MongoDB connection");
+    return cached.conn;
   }
 
-  cached.conn = await cached.promise;
+  if (!cached.promise) {
+    console.log("🔥 Creating new MongoDB connection");
+
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      dbName: "mealmind_dev",
+      serverSelectionTimeoutMS: 10000,
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+    console.log("✅ MongoDB Connected");
+  } catch (error) {
+    cached.promise = null;
+    console.error("❌ Connection failed:", error);
+    throw error;
+  }
+
   return cached.conn;
 }
 
