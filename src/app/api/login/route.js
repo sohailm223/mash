@@ -1,16 +1,14 @@
 import connectDB from "@/lib/db";
 import User from "@/models/Users";
 import { NextResponse } from "next/server";
-// import bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 
 export async function POST(req) {
   try {
     await connectDB();
 
-    // ✅ Use json() instead of formData()
     const { email, password } = await req.json();
 
-    // ✅ Validate fields
     if (!email || !password) {
       return NextResponse.json(
         { success: false, message: "Email and password are required" },
@@ -18,7 +16,6 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Find user
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -28,8 +25,11 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Compare hashed password
-    const isPasswordCorrect = await User.findOne({ email, password });
+    const isPasswordCorrect = await bcrypt.compare(
+      password,
+      user.password
+    );
+
     if (!isPasswordCorrect) {
       return NextResponse.json(
         { success: false, message: "Invalid email or password" },
@@ -37,7 +37,6 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Success
     return NextResponse.json(
       {
         success: true,
@@ -54,6 +53,7 @@ export async function POST(req) {
 
   } catch (error) {
     console.error("LOGIN ERROR:", error);
+
     return NextResponse.json(
       { success: false, message: error.message },
       { status: 500 }
