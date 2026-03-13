@@ -8,6 +8,8 @@ import {
   MOOD_OPTIONS,
   WEATHER_OPTIONS,
   FOOD_STYLE_OPTIONS,
+  INGREDIENT_RESTRICTION_OPTIONS,
+  FOOD_TYPE_OPTIONS
 } from "@/lib/constants";
 
 // Map field names to their valid options for validation/sanitization
@@ -19,6 +21,7 @@ const FIELD_VALIDATION = {
   cuisine: CUISINE_OPTIONS,
   mood: MOOD_OPTIONS,
   weather: WEATHER_OPTIONS,
+  foodType: FOOD_TYPE_OPTIONS
 };
 
 // A map to handle synonyms and expand search terms for robust filtering
@@ -44,7 +47,7 @@ export async function POST(req) {
     console.log("Incoming body:", body); 
 
     // Sanitize all array-based enum fields to ensure they are arrays of lowercase strings
-    const arrayFields = ['mealTiming', 'dietType', 'healthGoals', 'cuisine', 'mood', 'weather', 'foodStyle', 'searchKeywords', 'ingredients'];
+    const arrayFields = ['mealTiming', 'dietType', 'healthGoals', 'cuisine', 'mood', 'weather', 'foodStyle', 'searchKeywords', 'ingredients','foodType'];
     
     arrayFields.forEach(field => {
       if (body[field]) {
@@ -108,7 +111,7 @@ export async function GET(req) {
       }
       
       // 2. Handle Search Keywords / Ingredients (Bonus Feature)
-      if (key === 'search' || key === 'ingredients') {
+      if (key === 'search' || key === 'ingredients' || key === 'searchKeywords') {
          const searchTerm = value.trim().toLowerCase();
          // Search in name, searchKeywords, or ingredients
         // NO FILTER
@@ -116,7 +119,7 @@ export async function GET(req) {
 
     const ingredient = searchTerm.replace("no ", "").trim();
 
-    query.ingredients = { $nin: [ingredient] };
+    query.ingredients = { $nin: [new RegExp(ingredient, 'i')] };
 
   } else {
 

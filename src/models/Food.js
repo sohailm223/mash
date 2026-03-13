@@ -10,6 +10,7 @@ import {
   INGREDIENT_RESTRICTION_OPTIONS,
   COOK_TIME_OPTIONS,
   BUDGET_OPTIONS,
+  FOOD_TYPE_OPTIONS
 
 
 } from "@/lib/constants";
@@ -30,7 +31,7 @@ const FoodSchema = new mongoose.Schema(
   },
 
   // ITEMS within category
-  items: [String],
+  // items: [String],
 
   // MEAL TIMING
   mealTiming: {
@@ -90,16 +91,22 @@ const FoodSchema = new mongoose.Schema(
     carbs: Number,
     fat: Number
   },
-  //cooking time in minutes
-  cookingTime:{
-    type: String,
-    enum: COOK_TIME_OPTIONS
+  // Food Type
+  foodType: {
+    type: [String],
+    enum: FOOD_TYPE_OPTIONS
   },
-  // budget in dollars
-  budget: {
-    type: String,
-    enum: BUDGET_OPTIONS
-  }
+  
+  //cooking time in minutes
+  // cookingTime:{
+  //   type: String,
+  //   enum: COOK_TIME_OPTIONS
+  // },
+  // // budget in dollars
+  // budget: {
+  //   type: String,
+  //   enum: BUDGET_OPTIONS
+  // }
 
 },
 { timestamps: true }

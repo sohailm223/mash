@@ -28,7 +28,13 @@ function Login() {
       });
 
       if (res.ok) {
-        router.push('/'); // Redirect to the main page to see the food list
+        const data = await res.json();
+        if (data.user?.id) {
+          // Store user ID to be used by other pages like preferences
+          localStorage.setItem('userId', data.user.id);
+        }
+        // On successful login, redirect to the main page
+        router.push('/');
       } else {
         const data = await res.json();
         setError(data.message || 'Login failed.');

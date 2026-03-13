@@ -87,19 +87,23 @@ export const INGREDIENT_RESTRICTION_OPTIONS = [
   "no-dairy",
   "no-nuts",
 ];
-
-// COOK TIME FILTER
-export const COOK_TIME_OPTIONS = [
-  "under-10",
-  "under-20",
-  "under-30",
-  "above-30",
+export const FOOD_TYPE_OPTIONS = [
+  "online",
+  "self-cooking",
 ];
 
-// BUDGET FILTER
-export const BUDGET_OPTIONS = [
-  "under-50",
-  "50-150",
-  "150-300",
-  "premium",
-];
+// // COOK TIME FILTER
+// export const COOK_TIME_OPTIONS = [
+//   "under-10",
+//   "under-20",
+//   "under-30",
+//   "above-30",
+// ];
+
+// // BUDGET FILTER
+// export const BUDGET_OPTIONS = [
+//   "under-50",
+//   "50-150",
+//   "150-300",
+//   "premium",
+// ];

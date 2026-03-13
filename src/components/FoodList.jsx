@@ -121,13 +121,14 @@ export default function FoodList({ initialFoods, isFiltered }) {
                   </div>
                   {food.description && <p className="text-gray-600 text-sm line-clamp-2 mb-3">{food.description}</p>}
                   <div className="flex flex-wrap gap-2 mt-auto">
-                    {food.cuisine?.map((c) => <span key={c} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full capitalize">{c}</span>)}
-                    {food.dietType?.map((d) => <span key={d} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full capitalize">{d}</span>)}
-                    {food.healthGoals?.map((h) => <span key={h} className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full capitalize">{h}</span>)}
-                    {food.mealTiming?.map((t) => <span key={t} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full capitalize">{t}</span>)}
-                    {food.mood?.map((m) => <span key={m} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full capitalize">{m}</span>)}
-                    {food.weather?.map((w) => <span key={w} className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full capitalize">{w}</span>)}
-                    {food.foodStyle?.map((fs) => <span key={fs} className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full capitalize">{fs}</span>)}
+                    {food.cuisine?.map((c) => <span key={c} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full capitalize">cuisines: {c}</span>)}
+                    {food.dietType?.map((d) => <span key={d} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full capitalize">diet type: {d}</span>)}
+                    {food.healthGoals?.map((h) => <span key={h} className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full capitalize">health goals: {h}</span>)}
+                    {/* {food.mealTiming?.map((t) => <span key={t} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full capitalize">meal timing: {t}</span>)} */}
+                    {food.mood?.map((m) => <span key={m} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full capitalize">mood: {m}</span>)}
+                    {food.weather?.map((w) => <span key={w} className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full capitalize">weather: {w}</span>)}
+                    {food.foodStyle?.map((fs) => <span key={fs} className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full capitalize">food style: {fs}</span>)}
+                    {food.foodType?.map((ft) => <span key={ft} className="bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full capitalize">food type: {ft}</span>)}
                   </div>
                 </div>
               </div>
@@ -172,6 +173,7 @@ export default function FoodList({ initialFoods, isFiltered }) {
                      {food.dietType?.map(d => <span key={d} className="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full capitalize">{d}</span>)}
                      {food.cuisine?.map(c => <span key={c} className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full capitalize">{c}</span>)}
                      {food.mealTiming?.map(t => <span key={t} className="text-[10px] bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full capitalize">{t}</span>)}
+                     {food.foodType?.map(ft => <span key={ft} className="text-[10px] bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full capitalize">{ft}</span>)}
                   </div>
                 </div>
               </div>
@@ -238,6 +240,12 @@ export default function FoodList({ initialFoods, isFiltered }) {
                                 {suggestedFood.weather?.map(w => <span key={w} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded capitalize">{w}</span>)}
                             </div>
                         </div>
+                        <div>
+                            <span className="font-semibold block text-gray-700">Food Type</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                                {suggestedFood.foodType?.map(ft => <span key={ft} className="bg-teal-50 text-teal-700 px-2 py-1 rounded capitalize"> {ft}</span>)}
+                            </div>
+                        </div>
 
                         {suggestedFood.ingredients && suggestedFood.ingredients.length > 0 && (
                             <div>
@@ -258,12 +266,12 @@ export default function FoodList({ initialFoods, isFiltered }) {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-4">
+                        {/* <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <span className="font-semibold block text-gray-700">Meal Timing</span>
                                 <div className="mt-1 text-gray-600 capitalize">{suggestedFood.mealTiming?.join(', ')}</div>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
 
                     <div className="flex gap-4 mt-6">

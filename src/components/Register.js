@@ -50,6 +50,12 @@ function Register() {
       });
 
       if (res.ok) {
+        // Assuming the API returns the created user with an _id
+        const data = await res.json();
+        if (data.user?._id) {
+          localStorage.setItem('userId', data.user._id);
+        }
+
         // On successful registration, redirect user to fill out preferences
         router.push('/preferences');
       } else {

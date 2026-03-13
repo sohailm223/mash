@@ -1,8 +1,9 @@
 import Link from "next/link";
 import FoodList from "@/components/FoodList";
-import Register from "@/components/Register";
+// import Register from "@/components/Register";
 import Button from "@/components/commen/Button";
 import { getAutoMealTiming, getAutoWeatherCondition } from "@/lib/utils";
+import FoodSpin from "@/components/FoodSpin";
 
 async function getFoods(queryString = "") {
   // server components need an absolute URL when fetching internal APIs
@@ -18,39 +19,32 @@ async function getFoods(queryString = "") {
   return res.json();
 }
 
-// const user = {
-//     name: "prabha singh",
-//     email: "praha@gmail.com",
-//     profileComplete: true,
-//     questionnaire: [
-//       // { questionId: "mealTiming", answer: ["breakfast"] },
-//       // { questionId: "dietType", answer: ["veg"] },
-//       // { questionId: "healthGoals", answer: ["Weight Gain"] },
-//       // { questionId: "cuisine", answer: ["Indian"] }, 
-//       // { questionId: "mealTiming", answer: ["lunch"] },
-//       // { questionId: "mood", answer: ["Comfort"] },
-//       // { questionId: "mood", answer: ["excited"] },
-//       // {questionId: "searchKeywords", answer: ["roti"]},
-//       // {questionId: "foodStyle", answer: ["fast-food"]}
-//       //  {questionId: "searchKeywords", answer: ["no onion"]},
-//       // {questionId: "weather", answer: ["summer"]},
-// // This is a placeholder for a real authentication check.
-// // In a real application, you would get the user session here.
-// // For now, we set it to `null` to simulate a logged-out user.
-// // To see the food list, you can temporarily fill this object again.
-// // const user = null;
-
+const user = {
+    name: "prabha singh",
+    email: "praha@gmail.com",
+    profileComplete: true,
+    questionnaire: [
+      // { questionId: "mealTiming", answer: ["breakfast"] },
+      // { questionId: "dietType", answer: ["veg"] },
+      // { questionId: "healthGoals", answer: ["Weight Gain"] },
+      // { questionId: "cuisine", answer: ["Indian"] }, 
+      // { questionId: "mealTiming", answer: ["lunch"] },
+      // { questionId: "mood", answer: ["Comfort"] },
+      // { questionId: "mood", answer: ["excited"] },
+      // {questionId: "searchKeywords", answer: ["roti"]},
+      // {questionId: "foodStyle", answer: ["fast-food"]}
+      //  {questionId: "searchKeywords", answer: ["no onion"]},
+      // {questionId: "weather", answer: ["summer"]},
   
-//     ],
-//   };
-const user = null;
+    ],
+  };
+// const user = null;
 
 export default async function Home() {
   
-  if (!user) {
-    return <Register />;
-  }
-  // Process user preferences to build query string for the API
+  // if (!user) {
+  //   return <Register />;
+  // }
   const params = new URLSearchParams();
 
   // 1. Apply User Preferences (Manual Override / Profile)
@@ -97,7 +91,8 @@ export default async function Home() {
         </Link>
       </div>
       {foods && foods.length > 0 ? (
-        <FoodList initialFoods={foods} isFiltered={isFiltered} />
+        // <FoodList initialFoods={foods} isFiltered={isFiltered} />
+         <FoodSpin initialFoods={foods} isFiltered={isFiltered} />
       ) : (
         <div className="text-center py-10">
           <p className="text-gray-500">No food items found. Try changing your filters!</p>
