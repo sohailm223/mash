@@ -33,6 +33,13 @@ const UserSchema = new mongoose.Schema(
       type: String,
     },
 
+    questionnaire: [
+      {
+        questionId: String,
+        answer: [String],
+      },
+    ],
+
     currentUser: {
       type: String,
     },

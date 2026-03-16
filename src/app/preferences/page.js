@@ -41,16 +41,21 @@ export default function Preferences() {
   };
 
   const handleSubmit = async () => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
+    const userString = localStorage.getItem("user");
+    if (!userString) {
       alert("User not logged in ❌. Please register or login first.");
       router.push("/register");
       return;
     }
 
-    const { dietType, spiceLevel, allergies, healthSuggestions, weightGoal } = answers;
+    // We have the user object from registration now
+    const user = JSON.parse(userString);
+    const userId = user._id || user.id;
 
-    if (!dietType || !spiceLevel || allergies.length === 0 || !healthSuggestions || !weightGoal) {
+    const { dietType, spiceLevel, allergies, healthSuggestions, weightGoal } =
+      answers;
+
+    if (!dietType || !spiceLevel || !healthSuggestions || !weightGoal) {
       alert("Please answer all questions.");
       return;
     }
@@ -60,20 +65,33 @@ export default function Preferences() {
       { questionId: "spiceLevel", answer: [spiceLevel] },
       { questionId: "allergies", answer: allergies },
       { questionId: "healthSuggestions", answer: [healthSuggestions] },
-      { questionId: "healthGoals", answer: [weightGoal] },
+      { questionId: "weightGoal", answer: [weightGoal] },
     ].filter((a) => a.answer.length > 0 && a.answer[0] !== "");
 
     try {
-      // Corrected the API endpoint URL
       const res = await fetch("/api/preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, answers: answersPayload }),
+        body: JSON.stringify({
+          userId,
+          answers: answersPayload
+        }),
       });
 
       const data = await res.json();
       if (!res.ok)
         throw new Error(data.message || "Failed to save preferences.");
+
+      // Create the final user object with preferences to be stored in a cookie
+      const finalUserObject = {
+        ...user,
+        profileComplete: true,
+        questionnaire: answersPayload,
+      };
+
+      // Save to a cookie for the server-side Home page to read
+      document.cookie = `user=${JSON.stringify(finalUserObject)}; path=/; max-age=86400`;
+      localStorage.removeItem("user"); // Clean up local storage
 
       alert("Preferences Saved Successfully ✅");
       router.push("/");

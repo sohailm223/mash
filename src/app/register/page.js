@@ -50,17 +50,23 @@ function Register() {
       });
 
       if (res.ok) {
-        // Assuming the API returns the created user with an _id
-        const data = await res.json();
-        if (data.user?._id) {
-          localStorage.setItem('userId', data.user._id);
-        }
+  const data = await res.json();
+  const user = data.user;
 
-        // On successful registration, redirect user to fill out preferences
-        router.push('/preferences');
-      } else {
-        setError('User registration failed.');
-      }
+  if (user) {
+    // store user
+    localStorage.setItem("user", JSON.stringify(user));
+ 
+    // Set cookie to establish session, so the user stays logged in.
+    document.cookie = `user=${JSON.stringify(user)}; path=/; max-age=86400`;
+ 
+    // Always redirect to the homepage. The server-side logic in `app/page.js`
+    // will handle redirecting to `/preferences` if the profile is incomplete.
+    router.push("/");
+  }
+} else {
+  setError("User registration failed.");
+}
     } catch (error) {
       console.error('Error during registration: ', error);
       setError('Something went wrong.');

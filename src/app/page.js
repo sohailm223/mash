@@ -1,9 +1,11 @@
 import Link from "next/link";
-import FoodList from "@/components/FoodList";
-// import Register from "@/components/Register";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+// import FoodList from "@/components/FoodList";
 import Button from "@/components/commen/Button";
 import { getAutoMealTiming, getAutoWeatherCondition } from "@/lib/utils";
 import FoodSpin from "@/components/FoodSpin";
+import LogoutButton from "@/components/LogoutButton";
 
 async function getFoods(queryString = "") {
   // server components need an absolute URL when fetching internal APIs
@@ -19,46 +21,81 @@ async function getFoods(queryString = "") {
   return res.json();
 }
 
-const user = {
-    name: "prabha singh",
-    email: "praha@gmail.com",
-    profileComplete: true,
-    questionnaire: [
-      // { questionId: "mealTiming", answer: ["breakfast"] },
-      // { questionId: "dietType", answer: ["veg"] },
-      // { questionId: "healthGoals", answer: ["Weight Gain"] },
-      // { questionId: "cuisine", answer: ["Indian"] }, 
-      // { questionId: "mealTiming", answer: ["lunch"] },
-      // { questionId: "mood", answer: ["Comfort"] },
-      // { questionId: "mood", answer: ["excited"] },
-      // {questionId: "searchKeywords", answer: ["roti"]},
-      // {questionId: "foodStyle", answer: ["fast-food"]}
-      //  {questionId: "searchKeywords", answer: ["no onion"]},
-      // {questionId: "weather", answer: ["summer"]},
+// const user = {
+//     name: "prabha singh",
+//     email: "praha@gmail.com",
+//     profileComplete: true,
+//     questionnaire: [
+//       // { questionId: "mealTiming", answer: ["breakfast"] },
+//       // { questionId: "dietType", answer: ["veg"] },
+//       // { questionId: "healthGoals", answer: ["Weight Gain"] },
+//       // { questionId: "cuisine", answer: ["Indian"] }, 
+//       // { questionId: "mealTiming", answer: ["lunch"] },
+//       // { questionId: "mood", answer: ["Comfort"] },
+//       // { questionId: "mood", answer: ["excited"] },
+//       // {questionId: "searchKeywords", answer: ["roti"]},
+//       // {questionId: "foodStyle", answer: ["fast-food"]}
+//       //  {questionId: "searchKeywords", answer: ["no onion"]},
+//       // {questionId: "weather", answer: ["summer"]},
   
-    ],
-  };
+//     ],
+//   };
 // const user = null;
 
 export default async function Home() {
+  const cookieStore = await cookies();
+  const userCookie = cookieStore.get("user");
+  let user = null;
+
+  try {
+    user = userCookie ? JSON.parse(userCookie.value) : null;
+  } catch (e) {
+    console.error("Failed to parse user cookie:", e);
+  }
   
-  // if (!user) {
-  //   return <Register />;
-  // }
+
+  if (!user) {
+    // If no user, redirect to the login page.
+    redirect('/register');
+  }
+  
+  if (!user.profileComplete) {
+    // If user is logged in but profile is incomplete, force them to the preferences page.
+    redirect('/preferences');
+  }
+  
   const params = new URLSearchParams();
 
   // 1. Apply User Preferences (Manual Override / Profile)
-  user.questionnaire.forEach(preference => {
-    const key = preference.questionId;
-    const values = preference.answer;
-    
-    if (values && values.length > 0) {
-      params.set(key, values.join(','));
-    }
-  });
+  const FIELD_MAP = {
+    healthSuggestions: "healthGoals",
+    allergies: "restrictedIngredients",
+    weightGoal: "healthGoals", 
+  };
+
+  if (user.questionnaire) {
+    user.questionnaire.forEach((pref) => {
+      const apiField = FIELD_MAP[pref.questionId] || pref.questionId;
+      const values = pref.answer;
+
+      if (!values || values.length === 0 || values[0] === "") {
+        return;
+      }
+
+      // Logic to ignore negative/default answers
+      if (
+        (apiField === "restrictedIngredients" && (values[0].toLowerCase() === "no allergies" || values[0].toLowerCase() === "no")) ||
+        (apiField === "healthGoals" && pref.questionId === "healthSuggestions" && values[0].toLowerCase() === "no")
+      ) {
+        // Do nothing, skip this filter
+      } else {
+        // Append values to the same parameter if it already exists (e.g., for healthGoals)
+        params.append(apiField, values.join(","));
+      }
+    });
+  }
 
   // 2. System Auto Detect (Meal Timing)
-  // Logic: If user has NOT selected a meal timing, use system time.
   if (!params.has("mealTiming")) {
     const autoTiming = getAutoMealTiming();
     const currentTime = new Date().toLocaleTimeString();
@@ -67,7 +104,6 @@ export default async function Home() {
   }
 
   // 3. System Auto Detect (Weather)
-  // Logic: If user has NOT selected a weather condition, use a default.
   if (!params.has("weather")) {
     const autoWeather = getAutoWeatherCondition();
     console.log(`System Auto-Detect: ${autoWeather} (Weather)`);
@@ -82,17 +118,20 @@ export default async function Home() {
   // Fetch foods with the applied filters
   const foods = await getFoods(queryString);
 
+  const mealTimingForComponent = params.get("mealTiming").split(',')[0]  || "Lunch"; 
+
   return (
     <div className="p-10">
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-2xl font-bold">MealMind 🍽️</h1>
+        <LogoutButton />
         <Link href="/add-food">
           <Button className="bg-green-600">Add New Food</Button>
         </Link>
       </div>
       {foods && foods.length > 0 ? (
         // <FoodList initialFoods={foods} isFiltered={isFiltered} />
-         <FoodSpin initialFoods={foods} isFiltered={isFiltered} />
+         <FoodSpin initialFoods={foods} isFiltered={isFiltered} mealTiming={mealTimingForComponent} />
       ) : (
         <div className="text-center py-10">
           <p className="text-gray-500">No food items found. Try changing your filters!</p>

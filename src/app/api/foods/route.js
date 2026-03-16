@@ -15,6 +15,7 @@ import {
 // Map field names to their valid options for validation/sanitization
 const FIELD_VALIDATION = {
   foodStyle: FOOD_STYLE_OPTIONS,
+  spiceLevel: ["spicy", "mild", "normal"],
   mealTiming: MEAL_TIMING_OPTIONS,
   dietType: DIET_TYPE_OPTIONS,
   healthGoals: HEALTH_GOALS_OPTIONS,
@@ -24,7 +25,6 @@ const FIELD_VALIDATION = {
   foodType: FOOD_TYPE_OPTIONS
 };
 
-// A map to handle synonyms and expand search terms for robust filtering
 const SYNONYM_MAP = {
   dietType: {
     'veg': ['veg', 'vegetarian'],
@@ -46,7 +46,6 @@ export async function POST(req) {
 
     console.log("Incoming body:", body); 
 
-    // Sanitize all array-based enum fields to ensure they are arrays of lowercase strings
     const arrayFields = ['mealTiming', 'dietType', 'healthGoals', 'cuisine', 'mood', 'weather', 'foodStyle', 'searchKeywords', 'ingredients','foodType'];
     
     arrayFields.forEach(field => {
@@ -58,7 +57,6 @@ export async function POST(req) {
           values = String(body[field]).split(',').map(s => s.trim().toLowerCase());
         }
         
-        // Apply specific normalizations to canonical values before saving
         if (field === 'dietType') {
           values = values.map(s => {
             if (['vegetarian', 'pure vegetarian', 'pure-vegetarian'].includes(s)) return 'veg';
@@ -108,28 +106,46 @@ export async function GET(req) {
         if (searchValues.size > 0) {
           query[key] = { $in: Array.from(searchValues) };
         }
-      }
-      
-      // 2. Handle Search Keywords / Ingredients (Bonus Feature)
-      if (key === 'search' || key === 'ingredients' || key === 'searchKeywords') {
-         const searchTerm = value.trim().toLowerCase();
-         // Search in name, searchKeywords, or ingredients
+      } else if (key === 'restrictedIngredients') {
+        // Handle user allergies.
+        // This will find foods that do NOT contain the specified ingredients.
+        const ingredientsToExclude = value.split(',')
+          .map(v => v.trim().toLowerCase())
+          .filter(v => v);
+
+        if (ingredientsToExclude.length > 0) {
+          // Safely add to a $nin (not in) filter.
+          // This ensures it works with other negative filters like "no onion".
+          if (!query.ingredients) {
+            query.ingredients = {};
+          }
+          if (!query.ingredients.$nin) {
+            query.ingredients.$nin = [];
+          }
+          query.ingredients.$nin.push(...ingredientsToExclude.map(ing => new RegExp(ing, 'i')));
+        }
+      } else if (key === 'ingredients') {
+        // 2. ingredients' parameter for self-cooking
+        const ingredientsList = value.split(',')
+          .map(v => v.trim().toLowerCase())
+          .filter(v => v); // remove empty strings
+
+        if (ingredientsList.length > 0) {
+          query.ingredients = { $all: ingredientsList.map(ing => new RegExp(ing, 'i')) };
+        }
+      } else if (key === 'search' || key === 'searchKeywords') {
+        const searchTerm = value.trim().toLowerCase();
         // NO FILTER
-  if (searchTerm.startsWith("no ")) {
-
-    const ingredient = searchTerm.replace("no ", "").trim();
-
-    query.ingredients = { $nin: [new RegExp(ingredient, 'i')] };
-
-  } else {
-
-    query.$or = [
-      { name: { $regex: searchTerm, $options: 'i' } },
-      { searchKeywords: { $regex: searchTerm, $options: 'i' } },
-      { ingredients: { $regex: searchTerm, $options: 'i' } }
-    ];
-
-  }
+        if (searchTerm.startsWith("no ")) {
+          const ingredient = searchTerm.replace("no ", "").trim();
+          query.ingredients = { $nin: [new RegExp(ingredient, 'i')] };
+        } else {
+          query.$or = [
+            { name: { $regex: searchTerm, $options: 'i' } },
+            { searchKeywords: { $regex: searchTerm, $options: 'i' } },
+            { ingredients: { $regex: searchTerm, $options: 'i' } }
+          ];
+        }
       }
     }
 

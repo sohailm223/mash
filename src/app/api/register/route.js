@@ -19,9 +19,13 @@ export async function POST(req) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({ name, email, password: hashedPassword });
+    const newUser = await User.create({ name, email, password: hashedPassword });
 
-    return NextResponse.json({ message: 'User registered.' }, { status: 201 });
+    // We don't want to send the password hash to the client.
+    // The user object will have default values from the schema, like `profileComplete: false`.
+    const userToReturn = await User.findById(newUser._id).select('-password');
+
+    return NextResponse.json({ message: 'User registered.', user: userToReturn }, { status: 201 });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

@@ -10,40 +10,52 @@ function Login() {
   const router = useRouter();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError("");
 
-    if (!email || !password) {
-      setError('All fields are necessary.');
+  if (!email || !password) {
+    setError("All fields are necessary.");
+    return;
+  }
+
+  try {
+
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.message || "Email or password incorrect.");
       return;
     }
 
-    try {
-      // NOTE: For a real application, you should use a library like NextAuth.js
-      // to handle authentication securely. This is a simplified example.
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const user = data.user;
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user?.id) {
-          // Store user ID to be used by other pages like preferences
-          localStorage.setItem('userId', data.user.id);
-        }
-        // On successful login, redirect to the main page
-        router.push('/');
-      } else {
-        const data = await res.json();
-        setError(data.message || 'Login failed.');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('Something went wrong during login.');
+    if (!user) {
+      setError("User not found");
+      return;
     }
-  };
+
+    // save user
+    localStorage.setItem("user", JSON.stringify(user));
+
+    // set cookie
+    document.cookie = `user=${JSON.stringify(user)}; path=/; max-age=86400`;
+
+    // go home
+    router.push("/");
+
+  } catch (error) {
+    console.error("Login error:", error);
+    setError("Something went wrong during login.");
+  }
+};
 
   return (
     <div className="grid place-items-center h-screen">
@@ -54,7 +66,7 @@ function Login() {
           <input onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" />
           <button className="bg-green-600 text-white font-bold cursor-pointer px-6 py-2">Login</button>
           {error && <div className="bg-red-500 text-white w-fit text-sm py-1 px-3 rounded-md mt-2">{error}</div>}
-          <Link className="text-sm mt-3 text-right" href={'/'}>
+          <Link className="text-sm mt-3 text-right" href={'/register'}>
             Don't have an account? <span className="underline">Register</span>
           </Link>
         </form>

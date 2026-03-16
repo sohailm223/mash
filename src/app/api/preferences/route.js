@@ -19,10 +19,32 @@ export async function POST(req) {
       return NextResponse.json({ message: "User not found." }, { status: 404 });
     }
 
-    // Save the answers dynamically into the 'preferences' field
-    user.preferences = answers;
+  // 1. Save to the main questionnaire field for the Home page filters
+    user.questionnaire = answers;
+    // Help Mongoose detect changes to mixed/array types
+    user.markModified('questionnaire');
+
+    const fieldMapping = {
+      "dietType": "foodPreference",
+      "spiceLevel": "spicePreference",
+      "allergies": "allergies",
+      "healthSuggestions": "healthySuggestions",
+      "weightGoal": "weightGoal",
+      
+    };
+
+    answers.forEach(item => {
+      const schemaField = fieldMapping[item.questionId];
+      if (schemaField) {
+        user[schemaField] = item.answer;
+      }
+    });
+
+    // User ka profile complete ho gaya hai, isse database mein set karein
+    user.profileComplete = true;
 
     await user.save();
+        console.log('User preferences updated successfully for userId:', userId);
 
     return NextResponse.json({ message: "Preferences Saved Successfully ✅" }, { status: 200 });
   } catch (error) {
