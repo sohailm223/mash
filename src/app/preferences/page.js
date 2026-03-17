@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import MultiReuse from "@/components/Multireuse"; 
 import { preferenceQuestions } from "@/data/questions"; 
 
@@ -9,10 +10,11 @@ export default function Preferences() {
     dietType: "",
     spiceLevel: "",
     allergies: [],
-    healthSuggestions: "",
+    // healthSuggestions: "",
     weightGoal: "",
   });
   const router = useRouter();
+  const { data: session, update } = useSession();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -41,30 +43,27 @@ export default function Preferences() {
   };
 
   const handleSubmit = async () => {
-    const userString = localStorage.getItem("user");
-    if (!userString) {
-      alert("User not logged in ❌. Please register or login first.");
+    if (!session || !session.user) {
+      alert("User not logged in ❌. Please login first.");
       router.push("/register");
       return;
     }
 
-    // We have the user object from registration now
-    const user = JSON.parse(userString);
-    const userId = user._id || user.id;
+    const user = session.user;
+    const userId = user.id;
 
     const { dietType, spiceLevel, allergies, healthSuggestions, weightGoal } =
       answers;
 
-    if (!dietType || !spiceLevel || !healthSuggestions || !weightGoal) {
+    if (!dietType || !spiceLevel || !allergies || !weightGoal) {
       alert("Please answer all questions.");
       return;
     }
 
     const answersPayload = [
-      { questionId: "dietType", answer: [dietType] },
+      { questionId: "DietType", answer: [dietType] },
       { questionId: "spiceLevel", answer: [spiceLevel] },
       { questionId: "allergies", answer: allergies },
-      { questionId: "healthSuggestions", answer: [healthSuggestions] },
       { questionId: "weightGoal", answer: [weightGoal] },
     ].filter((a) => a.answer.length > 0 && a.answer[0] !== "");
 
@@ -82,16 +81,15 @@ export default function Preferences() {
       if (!res.ok)
         throw new Error(data.message || "Failed to save preferences.");
 
-      // Create the final user object with preferences to be stored in a cookie
-      const finalUserObject = {
-        ...user,
-        profileComplete: true,
-        questionnaire: answersPayload,
-      };
-
-      // Save to a cookie for the server-side Home page to read
-      document.cookie = `user=${JSON.stringify(finalUserObject)}; path=/; max-age=86400`;
-      localStorage.removeItem("user"); // Clean up local storage
+      
+      await update({
+        ...session,
+        user: {
+          ...session.user,
+          profileComplete: true,
+          questionnaire: answersPayload,
+        },
+      });
 
       alert("Preferences Saved Successfully ✅");
       router.push("/");

@@ -8,9 +8,11 @@ import {
   WEATHER_OPTIONS,
   FOOD_STYLE_OPTIONS,
   INGREDIENT_RESTRICTION_OPTIONS,
-  COOK_TIME_OPTIONS,
-  BUDGET_OPTIONS,
-  FOOD_TYPE_OPTIONS
+  // COOK_TIME_OPTIONS,
+  // BUDGET_OPTIONS,
+  FOOD_TYPE_OPTIONS,
+  SPICE_LEVEL_OPTIONS,
+
 
 
 } from "@/lib/constants";
@@ -30,9 +32,6 @@ const FoodSchema = new mongoose.Schema(
     type: String
   },
 
-  // ITEMS within category
-  // items: [String],
-
   // MEAL TIMING
   mealTiming: {
     type: [String],
@@ -50,6 +49,12 @@ const FoodSchema = new mongoose.Schema(
     type: [String],
     enum: HEALTH_GOALS_OPTIONS
   },
+  //spice level
+  spiceLevel: {
+    type: [String],
+    enum: SPICE_LEVEL_OPTIONS
+  },
+
 
   // CUISINE
   cuisine: {

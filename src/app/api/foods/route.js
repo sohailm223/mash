@@ -9,20 +9,22 @@ import {
   WEATHER_OPTIONS,
   FOOD_STYLE_OPTIONS,
   INGREDIENT_RESTRICTION_OPTIONS,
-  FOOD_TYPE_OPTIONS
+  FOOD_TYPE_OPTIONS,
+  SPICE_LEVEL_OPTIONS,
 } from "@/lib/constants";
 
 // Map field names to their valid options for validation/sanitization
 const FIELD_VALIDATION = {
   foodStyle: FOOD_STYLE_OPTIONS,
-  spiceLevel: ["spicy", "mild", "normal"],
+  // spiceLevel: ["spicy", "mild", "normal"],
   mealTiming: MEAL_TIMING_OPTIONS,
   dietType: DIET_TYPE_OPTIONS,
   healthGoals: HEALTH_GOALS_OPTIONS,
   cuisine: CUISINE_OPTIONS,
   mood: MOOD_OPTIONS,
   weather: WEATHER_OPTIONS,
-  foodType: FOOD_TYPE_OPTIONS
+  foodType: FOOD_TYPE_OPTIONS,
+  spiceLevel: SPICE_LEVEL_OPTIONS
 };
 
 const SYNONYM_MAP = {
@@ -46,7 +48,7 @@ export async function POST(req) {
 
     console.log("Incoming body:", body); 
 
-    const arrayFields = ['mealTiming', 'dietType', 'healthGoals', 'cuisine', 'mood', 'weather', 'foodStyle', 'searchKeywords', 'ingredients','foodType'];
+    const arrayFields = ['mealTiming', 'dietType', 'healthGoals', 'cuisine', 'mood', 'weather', 'foodStyle', 'searchKeywords', 'ingredients','foodType','spiceLevel'];
     
     arrayFields.forEach(field => {
       if (body[field]) {

@@ -4,7 +4,7 @@ import { MEAL_SPECIFIC_INGREDIENTS } from '@/lib/utils';
 
 
 
-export default function FoodSpin({ initialFoods, isFiltered, mealTiming }) {
+export default function FoodSpin({ initialFoods, isFiltered, mealTiming, baseParams }) {
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -85,12 +85,14 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming }) {
     setLoading(true);
     setError(null);
 
-    const params = new URLSearchParams({ foodType: mode });
+    const params = new URLSearchParams(baseParams);
+    params.set('foodType', mode);
+
     if (ingredients.length > 0) {
       params.set('ingredients', ingredients.join(','));
     }
 
-    const cacheKey = `${mode}-${ingredients.join(',')}`;
+    const cacheKey = params.toString();
 
     try {
       if (cacheRef.current[cacheKey]) {
