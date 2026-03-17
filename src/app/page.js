@@ -1,16 +1,21 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+
 // import FoodList from "@/components/FoodList";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./api/auth/[...nextauth]/route";
 import Button from "@/components/commen/Button";
 import { getAutoMealTiming, getAutoWeatherCondition } from "@/lib/utils";
 import FoodSpin from "@/components/FoodSpin";
 import LogoutButton from "@/components/LogoutButton";
+import { getToken } from "next-auth/jwt";
 
 async function getFoods(queryString = "") {
   // server components need an absolute URL when fetching internal APIs
   const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const url = queryString ? `${base}/api/foods?${queryString}` : `${base}/api/foods`;
+  const url = queryString
+    ? `${base}/api/foods?${queryString}`
+    : `${base}/api/foods`;
   const res = await fetch(url, { cache: "no-store" });
 
   if (!res.ok) {
@@ -29,7 +34,7 @@ async function getFoods(queryString = "") {
 //       // { questionId: "mealTiming", answer: ["breakfast"] },
 //       // { questionId: "dietType", answer: ["veg"] },
 //       // { questionId: "healthGoals", answer: ["Weight Gain"] },
-//       // { questionId: "cuisine", answer: ["Indian"] }, 
+//       // { questionId: "cuisine", answer: ["Indian"] },
 //       // { questionId: "mealTiming", answer: ["lunch"] },
 //       // { questionId: "mood", answer: ["Comfort"] },
 //       // { questionId: "mood", answer: ["excited"] },
@@ -37,40 +42,38 @@ async function getFoods(queryString = "") {
 //       // {questionId: "foodStyle", answer: ["fast-food"]}
 //       //  {questionId: "searchKeywords", answer: ["no onion"]},
 //       // {questionId: "weather", answer: ["summer"]},
-  
+
 //     ],
 //   };
 // const user = null;
 
 export default async function Home() {
-  const cookieStore = await cookies();
-  const userCookie = cookieStore.get("user");
-  let user = null;
-
-  try {
-    user = userCookie ? JSON.parse(userCookie.value) : null;
-  } catch (e) {
-    console.error("Failed to parse user cookie:", e);
-  }
+  const session = await getServerSession(authOptions);
   
 
-  if (!user) {
-    // If no user, redirect to the login page.
-    redirect('/register');
+  if (!session || !session.user) {
+    // If no user session, redirect to the login page.
+    redirect("/register");
   }
-  
-  if (!user.profileComplete) {
-    // If user is logged in but profile is incomplete, force them to the preferences page.
-    redirect('/preferences');
+  console.log(
+    "No active session found. Redirecting to register page..",
+    session,
+  );
+
+  const user = session.user;
+
+  if (!user.questionnaire || user.questionnaire.length === 0) {
+    redirect("/preferences");
   }
-  
+  console.log("User session found:", user);
+
   const params = new URLSearchParams();
 
   // 1. Apply User Preferences (Manual Override / Profile)
   const FIELD_MAP = {
     healthSuggestions: "healthGoals",
     allergies: "restrictedIngredients",
-    weightGoal: "healthGoals", 
+    weightGoal: "healthGoals",
   };
 
   if (user.questionnaire) {
@@ -84,13 +87,22 @@ export default async function Home() {
 
       // Logic to ignore negative/default answers
       if (
-        (apiField === "restrictedIngredients" && (values[0].toLowerCase() === "no allergies" || values[0].toLowerCase() === "no")) ||
-        (apiField === "healthGoals" && pref.questionId === "healthSuggestions" && values[0].toLowerCase() === "no")
+        (apiField === "restrictedIngredients" &&
+          (values[0].toLowerCase() === "no allergies" ||
+            values[0].toLowerCase() === "no")) ||
+        (apiField === "healthGoals" &&
+          pref.questionId === "healthSuggestions" &&
+          values[0].toLowerCase() === "no")
       ) {
-        // Do nothing, skip this filter
       } else {
-        // Append values to the same parameter if it already exists (e.g., for healthGoals)
-        params.append(apiField, values.join(","));
+        const formattedValues = values.map((v) =>
+          v.toLowerCase().replace(/\s+/g, "-"),
+        );
+
+        // ❌ IMPORTANT: foodType skip karna hai yahaa
+        if (apiField === "foodType") return;
+
+        params.append(apiField, formattedValues.join(","));
       }
     });
   }
@@ -99,7 +111,9 @@ export default async function Home() {
   if (!params.has("mealTiming")) {
     const autoTiming = getAutoMealTiming();
     const currentTime = new Date().toLocaleTimeString();
-    console.log(`System Auto-Detect: ${autoTiming} (Current Time: ${currentTime})`);
+    console.log(
+      `System Auto-Detect: ${autoTiming} (Current Time: ${currentTime})`,
+    );
     params.set("mealTiming", autoTiming);
   }
 
@@ -112,13 +126,18 @@ export default async function Home() {
 
   const queryString = params.toString();
   const isFiltered = queryString.length > 0;
-  
+
   console.log("Constructed query string:", queryString);
 
   // Fetch foods with the applied filters
   const foods = await getFoods(queryString);
 
-  const mealTimingForComponent = params.get("mealTiming").split(',')[0]  || "Lunch"; 
+  console.log("Fetched foods: get food accoding user preferences", user.questionnaire);
+  console.log("Fetched foods:", foods);
+  console.log("Is filtering applied?", isFiltered);
+  console.log("Final query string used for API call:", queryString);
+  const mealTimingForComponent =
+    params.get("mealTiming").split(",")[0] || "Lunch";
 
   return (
     <div className="p-10">
@@ -131,10 +150,17 @@ export default async function Home() {
       </div>
       {foods && foods.length > 0 ? (
         // <FoodList initialFoods={foods} isFiltered={isFiltered} />
-         <FoodSpin initialFoods={foods} isFiltered={isFiltered} mealTiming={mealTimingForComponent} />
+        <FoodSpin
+          initialFoods={foods}
+          isFiltered={isFiltered}
+          mealTiming={mealTimingForComponent}
+          baseParams={queryString}
+        />
       ) : (
         <div className="text-center py-10">
-          <p className="text-gray-500">No food items found. Try changing your filters!</p>
+          <p className="text-gray-500">
+            No food items found. Try changing your filters!
+          </p>
         </div>
       )}
     </div>

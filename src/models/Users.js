@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 
-// Agar already model exist karta hai, reuse karo
 const UserSchema = new mongoose.Schema(
   {
     name: {
@@ -42,11 +41,6 @@ const UserSchema = new mongoose.Schema(
 
     currentUser: {
       type: String,
-    },
-
-    history: {
-      type: [String],
-      default: [],
     },
 
     foodPreference: {

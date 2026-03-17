@@ -32,6 +32,13 @@ export const HEALTH_GOALS_OPTIONS = [
   "low-sugar",
   "low-oil",
 ];
+// spice level
+export const SPICE_LEVEL_OPTIONS = [
+  "mild",
+  "medium",
+  "spicy",
+  "extra-spicy",
+];
 
 // CUISINE
 export const CUISINE_OPTIONS = [
@@ -70,6 +77,7 @@ export const MOOD_OPTIONS = [
   "excited",
   "relaxed",
   "energized",
+  "happy",
 ];
 
 // WEATHER
@@ -82,10 +90,13 @@ export const WEATHER_OPTIONS = [
 
 // INGREDIENT RESTRICTIONS
 export const INGREDIENT_RESTRICTION_OPTIONS = [
-  "no-onion",
-  "no-garlic",
-  "no-dairy",
-  "no-nuts",
+  "onion",
+  "garlic",
+  "dairy",
+  "nuts",
+  "sugar",
+  "oil",
+  "peanuts"
 ];
 export const FOOD_TYPE_OPTIONS = [
   "online",

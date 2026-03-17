@@ -28,7 +28,7 @@ export async function POST(req) {
       "dietType": "foodPreference",
       "spiceLevel": "spicePreference",
       "allergies": "allergies",
-      "healthSuggestions": "healthySuggestions",
+      // "healthSuggestions": "healthySuggestions",/
       "weightGoal": "weightGoal",
       
     };

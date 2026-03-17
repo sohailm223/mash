@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { signIn } from "next-auth/react";
 
 function Register() {
   const [name, setName] = useState('');
@@ -50,20 +51,17 @@ function Register() {
       });
 
       if (res.ok) {
-  const data = await res.json();
-  const user = data.user;
+        const signInRes = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
+        });
 
-  if (user) {
-    // store user
-    localStorage.setItem("user", JSON.stringify(user));
- 
-    // Set cookie to establish session, so the user stays logged in.
-    document.cookie = `user=${JSON.stringify(user)}; path=/; max-age=86400`;
- 
-    // Always redirect to the homepage. The server-side logic in `app/page.js`
-    // will handle redirecting to `/preferences` if the profile is incomplete.
-    router.push("/");
-  }
+        if (!signInRes?.error) {
+          router.push("/");
+        } else {
+          setError("Registration successful, but login failed.");
+        }
 } else {
   setError("User registration failed.");
 }
@@ -84,6 +82,21 @@ function Register() {
           <input onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" />
           <button className="bg-green-600 text-white font-bold cursor-pointer px-6 py-2">
             Register
+          </button>
+
+          <div className="flex items-center my-2">
+            <div className="h-px bg-gray-300 flex-1"></div>
+            <span className="px-2 text-gray-500 text-sm">OR</span>
+            <div className="h-px bg-gray-300 flex-1"></div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => signIn("google")}
+            className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 font-bold cursor-pointer px-6 py-2 hover:bg-gray-50"
+          >
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
+            Register with Google
           </button>
 
           {error && (

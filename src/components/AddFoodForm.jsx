@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Input from "./ui/Input";
-import Button from "./ui/Button";
+import Input from "./commen/Input";
+import Button from "./commen/Button";
 import {
   MEAL_TIMING_OPTIONS,
   DIET_TYPE_OPTIONS,
