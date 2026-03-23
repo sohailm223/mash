@@ -68,11 +68,11 @@ export default function LogoutButton() {
 
   return (
     <div className="flex items-center gap-4">
-      <span className="text-sm font-mono text-red-700 bg-red-100 px-2 py-1 rounded-md">
+      {/* <span className="text-sm font-mono text-red-700 bg-red-100 px-2 py-1 rounded-md">
         {timeLeft !== null && timeLeft > 0 
           ? `Auto-logout in: ${formatTime(timeLeft)}` 
           : "Session checking..."}
-      </span>
+      </span> */}
       <Button onClick={handleLogout} className="bg-red-600">
         Logout
       </Button>

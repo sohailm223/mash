@@ -3,9 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MEAL_SPECIFIC_INGREDIENTS } from '@/lib/utils';
 import FilterPanel from './FilterPanel';
 
-
-
-
 export default function FoodSpin({ initialFoods, isFiltered, mealTiming, baseParams }) {
   const [foods, setFoods] = useState(initialFoods || []);
   const [loading, setLoading] = useState(false);
@@ -139,21 +136,6 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
       setLoading(false);
     }
   };
-
-  // Effect to fetch foods when ingredients change in self-cooking mode
-  // useEffect(() => {
-  //   if (selectedMode === 'self-cooking') {
-  //     const selectedIngredients = Object.keys(checkedIngredients).filter(
-  //       (key) => checkedIngredients[key]
-  //     );
-
-  //     if (selectedIngredients.length > 0) {
-  //       fetchFoodsForMode('self-cooking', selectedIngredients);
-  //     } else {
-  //       setFoods([]); // Clear food list if no ingredients are selected
-  //     }
-  //   }
-  // }, [checkedIngredients, selectedMode]);
 
   const handleFilterApply = (newParams, expiryTime) => {
     setCurrentQueryString(newParams);
