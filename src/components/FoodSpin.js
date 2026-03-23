@@ -31,14 +31,8 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
   const cacheRef = useRef({});
   const abortControllerRef = useRef(null);
 
-  
-      
-
   const COMMON_INGREDIENTS = MEAL_SPECIFIC_INGREDIENTS[mealTiming] || [
   //   { id: "chicken", label: "Chicken" },
-  //   // { id: "paneer", label: "Paneer" },
-  //   // { id: "dal", label: "Dal" },
-  //   // { id: "chawal", label: "Chawal (Rice)"},
   ];
   const [checkedIngredients, setCheckedIngredients] = useState({});
 
@@ -94,13 +88,7 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
     setShowResult(false);
     setError(null);
     setCheckedIngredients({}); 
-
-    // if (mode === 'online') {
-    //   fetchFoodsForMode('online');
-    // }
-    // if (mode === 'self-cooking') {
-    //   fetchFoodsForMode('self-cooking');
-    // }
+    
   };
 
   const fetchFoodsForMode = async (mode, ingredients = []) => {
@@ -180,6 +168,16 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
       setFilterExpiry(expiryTime);
       setTimeLeft(Math.ceil((expiryTime - Date.now()) / 1000));
     }
+  };
+
+  const clearFilters = () => {
+    setFilterExpiry(null);
+    setTimeLeft(null);
+    setCurrentQueryString(baseParams); // Reset to defaults
+    document.cookie = "temp_filters=; path=/; max-age=0"; // Clear cookie
+    setFoods([]);
+    setSuggestedFood(null);
+    setShowResult(false);
   };
 
   useEffect(() => {
@@ -268,8 +266,15 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
             What's your plan for today?
           </h2>
           {timeLeft !== null && timeLeft > 0 && (
-            <div className="absolute right-14 top-1/2 -translate-y-1/2 mr-2 text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded animate-pulse">
+            <div className="absolute right-14 top-1/2 -translate-y-1/2 mr-2 flex items-center gap-2">
+              <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded animate-pulse">
               ⏳ {timeLeft}s left
+              </span>
+              <button onClick={clearFilters} className="p-1 bg-red-50 hover:bg-red-100 text-red-500 rounded-full transition" title="Clear Filters">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
             </div>
           )}
           <button 

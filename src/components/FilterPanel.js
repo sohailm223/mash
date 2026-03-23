@@ -93,9 +93,8 @@ export default function FilterPanel({ currentParams, onApply, onClose }) {
     });
     console.log("show food after applying filters with params:", params.toString());
 
-    // Save filters to a temporary cookie for 1 minute (60 seconds)
-    // This allows the filters to persist across refreshes but not permanently in the DB
-    const expirySeconds = 60;
+    // Save filters to a temporary cookie for 1 hour (3600 seconds)
+    const expirySeconds = 3600; // 1 Hour (60 * 60)
     document.cookie = `temp_filters=${params.toString()}; path=/; max-age=${expirySeconds}`;
     
     onApply(params.toString(), Date.now() + expirySeconds * 1000);
