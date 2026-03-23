@@ -26,7 +26,7 @@ export async function POST(req) {
 
     const fieldMapping = {
       "dietType": "foodPreference",
-      "spiceLevel": "spicePreference",
+      // "spiceLevel": "spicePreference",
       "allergies": "allergies",
       // "healthSuggestions": "healthySuggestions",/
       "weightGoal": "weightGoal",

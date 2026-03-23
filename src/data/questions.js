@@ -5,17 +5,17 @@ export const preferenceQuestions = [
     name: "dietType",
     options: ["veg", "non-veg"],
   },
-  {
-    type: "radio",
-    title: "Q2 Do you prefer spicy or mild?",
-    name: "spiceLevel",
-    options: ["mild", "medium", "spicy", "extra-spicy"],
-  },
+  // {
+  //   type: "radio",
+  //   title: "Q2 Do you prefer spicy or mild?",
+  //   name: "spiceLevel",
+  //   options: ["mild", "medium", "spicy", "extra-spicy"],
+  // },
   {
     type: "checkbox",
     title: "Q3 Any allergies? (max 5)",
     name: "allergies",
-    options: ["No allergies", "Onion", "Garlic", "Dairy", "Peanuts", "Sugar", "Oil", "Nuts"],
+    options: ["No allergies", "Onion", "Garlic", "Dairy", "Peanuts", "Sugar", "Oil", "Nuts", "eggs"],
   },
   // {
   //   type: "radio",

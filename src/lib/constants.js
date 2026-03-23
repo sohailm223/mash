@@ -90,13 +90,15 @@ export const WEATHER_OPTIONS = [
 
 // INGREDIENT RESTRICTIONS
 export const INGREDIENT_RESTRICTION_OPTIONS = [
+  
   "onion",
   "garlic",
   "dairy",
   "nuts",
   "sugar",
   "oil",
-  "peanuts"
+  "peanuts",
+  "eggs"
 ];
 export const FOOD_TYPE_OPTIONS = [
   "online",

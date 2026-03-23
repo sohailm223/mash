@@ -1,11 +1,10 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { MEAL_SPECIFIC_INGREDIENTS } from '@/lib/utils';
-
-
+import FilterPanel from './FilterPanel';
 
 export default function FoodSpin({ initialFoods, isFiltered, mealTiming, baseParams }) {
-  const [foods, setFoods] = useState([]);
+  const [foods, setFoods] = useState(initialFoods || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -17,15 +16,20 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
   const [showResult, setShowResult] = useState(false);
   const [rejectedIds, setRejectedIds] = useState(new Set());
 
+  // filtering states
+  const [currentQueryString, setCurrentQueryString] = useState(baseParams);
+  const [filtersVisible, setFiltersVisible] = useState(false);
+  
+  // Filter timer states
+  const [filterExpiry, setFilterExpiry] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(null);
+
   const wheelRef = useRef(null);
   const cacheRef = useRef({});
   const abortControllerRef = useRef(null);
 
   const COMMON_INGREDIENTS = MEAL_SPECIFIC_INGREDIENTS[mealTiming] || [
   //   { id: "chicken", label: "Chicken" },
-  //   // { id: "paneer", label: "Paneer" },
-  //   // { id: "dal", label: "Dal" },
-  //   // { id: "chawal", label: "Chawal (Rice)"},
   ];
   const [checkedIngredients, setCheckedIngredients] = useState({});
 
@@ -48,19 +52,31 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
   };
 
   useEffect(() => {
+    if (initialFoods) {
+      setFoods(initialFoods);
+      if (isFiltered && initialFoods.length === 0) {
+        setError("No food items found. Try changing your filters!");
+      } else {
+        setError(null);
+      }
+    }
+  }, [initialFoods, isFiltered]);
+
+  useEffect(() => {
     if (foods?.length > 0) {
       setRejectedIds(new Set());
       setSuggestedFood(getNewSuggestion(foods));
       setShowResult(false);
-      if (wheelRef.current) {
-        wheelRef.current.style.transition = "none";
-        wheelRef.current.style.transform = `rotate(0deg)`;
-      }
     }
   }, [foods]);
 
   const handleModeSelect = (mode) => {
     if (selectedMode === mode) return;
+
+    if (wheelRef.current) {
+      wheelRef.current.style.transition = "none";
+      wheelRef.current.style.transform = `rotate(0deg)`;
+    }
 
     setSelectedMode(mode);
     setFoods([]);
@@ -69,13 +85,7 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
     setShowResult(false);
     setError(null);
     setCheckedIngredients({}); 
-
-    if (mode === 'online') {
-      fetchFoodsForMode('online');
-    }
-    if (mode === 'self-cooking') {
-      fetchFoodsForMode('self-cooking');
-    }
+    
   };
 
   const fetchFoodsForMode = async (mode, ingredients = []) => {
@@ -85,22 +95,20 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
     setLoading(true);
     setError(null);
 
-    const params = new URLSearchParams(baseParams);
+    const params = new URLSearchParams(currentQueryString);
+    
+    // Fix: If 'no-allergies' is selected, remove the param so the API returns all foods
+    if (params.get('restrictedIngredients') === 'no-allergies') {
+      params.delete('restrictedIngredients');
+    }
+
     params.set('foodType', mode);
 
     if (ingredients.length > 0) {
       params.set('ingredients', ingredients.join(','));
     }
 
-    const cacheKey = params.toString();
-
     try {
-      if (cacheRef.current[cacheKey]) {
-        setFoods(cacheRef.current[cacheKey]);
-        setLoading(false);
-        return;
-      }
-
       const res = await fetch(`/api/foods?${params.toString()}`, {
         signal: abortControllerRef.current.signal
       });
@@ -109,47 +117,88 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
         throw new Error(`Failed to fetch food: ${res.statusText}`);
       }
       const data = await res.json();
-      console.log(`Querying for: ${params.toString()}`);
-      console.log(`self-cooking total foods: \`${ingredients.join(',')}\``, { dataLength: data.length, ingredients });
-      console.log("Total Foods:", data.length);
-
 
       if (data.length === 0) {
-        setError(`No food found for your selection.`);
+        setError("No food found for your selection. Try changing filters.");
         setFoods([]);
-      } else {
-        cacheRef.current[cacheKey] = data;
-        setFoods(data);
+        return [];
       }
+
+      setFoods(data);
+      return data;
     } catch (err) {
       if (err.name !== 'AbortError') {
         setError(err.message);
       }
+      setFoods([]);
+      return [];
     } finally {
       setLoading(false);
     }
   };
 
-  // Effect to fetch foods when ingredients change in self-cooking mode
-  useEffect(() => {
-    if (selectedMode === 'self-cooking') {
-      const selectedIngredients = Object.keys(checkedIngredients).filter(
-        (key) => checkedIngredients[key]
-      );
+  const handleFilterApply = (newParams, expiryTime) => {
+    setCurrentQueryString(newParams);
+    setFiltersVisible(false);
+    // setSelectedMode(null); // Removed to keep the user in the current mode
+    setFoods([]);
+    setSuggestedFood(null);
+    setShowResult(false);
+    setError(null);
 
-      if (selectedIngredients.length > 0) {
-        fetchFoodsForMode('self-cooking', selectedIngredients);
-      } else {
-        setFoods([]); // Clear food list if no ingredients are selected
-      }
+    if (expiryTime) {
+      setFilterExpiry(expiryTime);
+      setTimeLeft(Math.ceil((expiryTime - Date.now()) / 1000));
     }
-  }, [checkedIngredients, selectedMode]);
+  };
 
-  const startSpin = () => {
-    if (spinning || foods.length === 0) return;
+  const clearFilters = () => {
+    setFilterExpiry(null);
+    setTimeLeft(null);
+    setCurrentQueryString(baseParams); // Reset to defaults
+    document.cookie = "temp_filters=; path=/; max-age=0"; // Clear cookie
+    setFoods([]);
+    setSuggestedFood(null);
+    setShowResult(false);
+  };
 
-    const nextFood = getNewSuggestion();
-    setSuggestedFood(nextFood);
+  useEffect(() => {
+    if (!filterExpiry) return;
+
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((filterExpiry - Date.now()) / 1000);
+      console.log(`Time remaining for filter expiration: ${remaining}s`);
+
+      if (remaining <= 0) {
+        clearInterval(interval);
+        setFilterExpiry(null);
+        setTimeLeft(null);
+        setCurrentQueryString(baseParams); // Reset to defaults
+        document.cookie = "temp_filters=; path=/; max-age=0"; // Clear cookie
+        setFoods([]); 
+        setSuggestedFood(null);
+        setShowResult(false);
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [filterExpiry, baseParams]);
+
+  const startSpin = async () => {
+    if (spinning || loading) return;
+
+    //  Ingredients nikaalo
+    let selectedIngredients = Object.keys(checkedIngredients).filter(
+      (key) => checkedIngredients[key]
+    );
+
+    const fetchedFoods = await fetchFoodsForMode(selectedMode, selectedIngredients);
+
+    if (!fetchedFoods || fetchedFoods.length === 0) return;
+
+    setSuggestedFood(getNewSuggestion(fetchedFoods));
 
     setSpinning(true);
     setShowResult(false);
@@ -159,7 +208,8 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
     const totalRotation = extraSpins * 360 + randomAngle;
 
     if (wheelRef.current) {
-      wheelRef.current.style.transition = "transform 4.5s cubic-bezier(0.25, 0.1, 0.25, 1)";
+      wheelRef.current.style.transition =
+        "transform 4.5s cubic-bezier(0.25, 0.1, 0.25, 1)";
       wheelRef.current.style.transform = `rotate(${totalRotation}deg)`;
     }
 
@@ -189,19 +239,43 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
   };
 
   if (phase === "select-mode" || phase === "spin") {
+
     return (
       <div className="min-h-fit flex flex-col items-center justify-start gap-4 p-4 max-w-2xl mx-auto">
 
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-2">
-          What's your plan for today?
-        </h2>
+        <div className="relative w-full flex justify-between items-center mb-2">
+          <h2 className="text-2xl md:text-3xl font-bold text-center">
+            What's your plan for today?
+          </h2>
+          {timeLeft !== null && timeLeft > 0 && (
+            <div className="absolute right-14 top-1/2 -translate-y-1/2 mr-2 flex items-center gap-2">
+              <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded animate-pulse">
+              ⏳ {timeLeft}s left
+              </span>
+              <button onClick={clearFilters} className="p-1 bg-red-50 hover:bg-red-100 text-red-500 rounded-full transition" title="Clear Filters">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          )}
+          <button 
+            onClick={() => setFiltersVisible(true)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 text-gray-600 transition border border-gray-200"
+            title="Filter Preferences"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+          </button>
+        </div>
+
 
         {/* 1. SPIN WHEEL - TOP */}
         <div className="relative w-48 h-48 md:w-64 md:h-64 mx-auto">
           <div
             ref={wheelRef}
             className="absolute inset-0 rounded-full border-8 border-gray-800 bg-gray-100 shadow-2xl overflow-hidden"
-            style={{ transform: "rotate(0deg)" }}
           >
             <img
               src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800"
@@ -222,6 +296,8 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
               </h3>
             </div>
           )}
+
+        
 
           {/* Pointer arrow */}
           <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
@@ -281,7 +357,7 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
             </div>
             {Object.values(checkedIngredients).some(Boolean) && (
               <p className="text-center text-green-700 text-sm mt-3 font-medium">
-                ✅ {Object.values(checkedIngredients).filter(Boolean).length} ingredient(s) selected
+                 {Object.values(checkedIngredients).filter(Boolean).length} ingredient(s) selected
               </p>
             )}
           </div>
@@ -291,13 +367,15 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
         {error && <p className="text-center text-red-600 font-bold">{error}</p>}
 
         {/* 3. SPIN BUTTON */}
-        <button
-          onClick={startSpin}
-          disabled={spinning || foods.length === 0}
-          className="px-10 py-3 bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 text-black text-xl font-extrabold rounded-full shadow-lg disabled:opacity-60 transition transform active:scale-95"
-        >
-          {spinning ? "Spinning..." : "SPIN!"}
-        </button>
+        {selectedMode && (
+          <button
+            onClick={startSpin}
+            disabled={loading || spinning || (selectedMode === "self-cooking" && Object.values(checkedIngredients).filter(Boolean).length === 0)}
+            className="px-10 py-3 bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 text-black text-xl font-extrabold rounded-full shadow-lg disabled:opacity-60 transition transform active:scale-95"
+          >
+            {(loading || spinning) ? "Spinning..." : "SPIN!"}
+          </button>
+        )}
 
         {/* 4. RESULT BUTTONS - After Spin */}
         {showResult && suggestedFood && !spinning && (
@@ -333,6 +411,15 @@ export default function FoodSpin({ initialFoods, isFiltered, mealTiming, basePar
               Change mode
             </button>
           </div>
+        )}
+
+        {/* Filter Panel */}
+        {filtersVisible && (
+          <FilterPanel 
+            currentParams={currentQueryString} 
+            onApply={handleFilterApply} 
+            onClose={() => setFiltersVisible(false)} 
+          />
         )}
 
       </div>
