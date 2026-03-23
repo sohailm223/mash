@@ -39,39 +39,7 @@ const UserSchema = new mongoose.Schema(
       },
     ],
 
-    currentUser: {
-      type: String,
-    },
-
-    foodPreference: {
-      type: [String],
-      default: [],
-    },
-
-    spicePreference: {
-      type: [String],
-      default: [],
-    },
-
-    allergies: {
-      type: [String],
-      default: [],
-    },
-
-    healthySuggestions: {
-      type: [String],
-      default: [],
-    },
-
-    weightGoal: {
-      type: [String],
-      default: [],
-    },
-
-    preferences: {
-      type: [String],
-      default: [],
-    },
+    // All user preferences are stored in the questionnaire array above
   },
   { timestamps: true }
 );

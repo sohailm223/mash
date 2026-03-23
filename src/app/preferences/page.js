@@ -52,17 +52,17 @@ export default function Preferences() {
     const user = session.user;
     const userId = user.id;
 
-    const { dietType, spiceLevel, allergies, healthSuggestions, weightGoal } =
+    const { dietType, allergies, weightGoal } =
       answers;
 
-    if (!dietType || !spiceLevel || !allergies || !weightGoal) {
+    if (!dietType  || !allergies || !weightGoal) {
       alert("Please answer all questions.");
       return;
     }
 
     const answersPayload = [
-      { questionId: "DietType", answer: [dietType] },
-      { questionId: "spiceLevel", answer: [spiceLevel] },
+      { questionId: "dietType", answer: [dietType] },
+      // { questionId: "spiceLevel", answer: [spiceLevel] },
       { questionId: "allergies", answer: allergies },
       { questionId: "weightGoal", answer: [weightGoal] },
     ].filter((a) => a.answer.length > 0 && a.answer[0] !== "");

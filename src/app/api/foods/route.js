@@ -48,7 +48,7 @@ export async function POST(req) {
 
     console.log("Incoming body:", body); 
 
-    const arrayFields = ['mealTiming', 'dietType', 'healthGoals', 'cuisine', 'mood', 'weather', 'foodStyle', 'searchKeywords', 'ingredients','foodType','spiceLevel'];
+    const arrayFields = ['mealTiming', 'dietType', 'healthGoals', 'cuisine', 'mood', 'weather', 'foodStyle', 'searchKeywords', 'ingredients', 'restrictedIngredients', 'foodType', 'spiceLevel'];
     
     arrayFields.forEach(field => {
       if (body[field]) {
@@ -108,39 +108,38 @@ export async function GET(req) {
         if (searchValues.size > 0) {
           query[key] = { $in: Array.from(searchValues) };
         }
-      } else if (key === 'restrictedIngredients') {
-        // Handle user allergies.
-        // This will find foods that do NOT contain the specified ingredients.
-        const ingredientsToExclude = value.split(',')
+      } else if (key === 'restrictedIngredients' || key === 'allergies') {
+        // It checks if the `restrictedIngredients` field in the DB contains the user's allergies.
+        const ingredientsToLookFor = value.split(',')
           .map(v => v.trim().toLowerCase())
-          .filter(v => v);
+          .filter(v => v && v !== 'no-allergies' && v !== 'no allergies');
 
-        if (ingredientsToExclude.length > 0) {
-          // Safely add to a $nin (not in) filter.
-          // This ensures it works with other negative filters like "no onion".
-          if (!query.ingredients) {
-            query.ingredients = {};
-          }
-          if (!query.ingredients.$nin) {
-            query.ingredients.$nin = [];
-          }
-          query.ingredients.$nin.push(...ingredientsToExclude.map(ing => new RegExp(ing, 'i')));
+        if (ingredientsToLookFor.length > 0) {
+          //  URL is `allergies=garlic,onion`, it finds foods where `restrictedIngredients` contains BOTH.
+          query.restrictedIngredients = { $all: ingredientsToLookFor.map(ing => new RegExp(ing, 'i')) };
         }
       } else if (key === 'ingredients') {
         // 2. ingredients' parameter for self-cooking
         const ingredientsList = value.split(',')
           .map(v => v.trim().toLowerCase())
-          .filter(v => v); // remove empty strings
+          .filter(v => v); 
 
         if (ingredientsList.length > 0) {
-          query.ingredients = { $all: ingredientsList.map(ing => new RegExp(ing, 'i')) };
+          if (!query.ingredients) {
+            query.ingredients = {};
+          }
+          query.ingredients.$all = ingredientsList.map(ing => new RegExp(ing, 'i'));
         }
       } else if (key === 'search' || key === 'searchKeywords') {
         const searchTerm = value.trim().toLowerCase();
         // NO FILTER
         if (searchTerm.startsWith("no ")) {
           const ingredient = searchTerm.replace("no ", "").trim();
-          query.ingredients = { $nin: [new RegExp(ingredient, 'i')] };
+          if (!query.ingredients) {
+            query.ingredients = {};
+          }
+          if (!query.ingredients.$nin) query.ingredients.$nin = [];
+          query.ingredients.$nin.push(new RegExp(ingredient, 'i'));
         } else {
           query.$or = [
             { name: { $regex: searchTerm, $options: 'i' } },
