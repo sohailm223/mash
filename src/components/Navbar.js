@@ -1,39 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getProfile, logout } from "./api";
 import { useRouter, usePathname } from "next/navigation";
+import { defaultUser } from "@/lib/defaultUser";
 
 export default function Navbar() {
-  const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  // always run hooks, decide visibility afterwards
-  const showNavbar = pathname !== "/login" && pathname !== "/register";
+  const user = defaultUser;
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await getProfile();
-        if (res.success) setUser(res.data);
-        else setUser(null);
-      } catch (e) {
-        // not logged in
-        setUser(null);
-      }
-    }
-    load();
-  }, [pathname]);
-
-  const handleLogout = async () => {
-    await logout();
-    setUser(null);
-    setMenuOpen(false);
-    router.push("/login");
-  };
+  const showNavbar = true; // always show now
 
   const toggleMenu = () => setMenuOpen((o) => !o);
 
@@ -58,7 +37,6 @@ export default function Navbar() {
         MealMind
       </Link>
       <div className="relative">
-        {user ? (
           <>
             <button
               onClick={toggleMenu}
@@ -74,33 +52,10 @@ export default function Navbar() {
                   <p className="font-medium">{user.name}</p>
                   <p className="text-xs text-gray-500 truncate">{user.email}</p>
                 </div>
-                <div className="border-t">
-                  <Link
-                    href="/user-profile"
-                    className="block px-4 py-2 hover:bg-gray-100"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      handleLogout();
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                  >
-                    Logout
-                  </button>
-                </div>
+
               </div>
             )}
           </>
-        ) : (
-          <div className="space-x-4">
-            <Link href="/login">Login</Link>
-            <Link href="/register">Register</Link>
-          </div>
-        )}
       </div>
     </nav>
   );

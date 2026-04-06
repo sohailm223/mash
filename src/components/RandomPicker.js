@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import FoodCard from "./cards/FoodCard";
-import { getRandomFood, savePreference } from "./api";
+import { getRandomFood } from "./api";
 
 export default function RandomPicker({ onLike, onDislike }) {
   const [food, setFood] = useState(null);
   const [exclusions, setExclusions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [rejectedId, setRejectedId] = useState(null);
 
   const fetchNext = async () => {
     setLoading(true);
@@ -28,24 +29,17 @@ export default function RandomPicker({ onLike, onDislike }) {
 
   const handleYes = async () => {
     if (!food) return;
-    try {
-      await savePreference(food._id, "like");
-      onLike && onLike(food);
-    } catch (e) {
-      console.error("failed to save preference", e);
-    }
+    onLike && onLike(food);
+    setRejectedId(null);
     fetchNext();
   };
 
   const handleNo = async () => {
     if (food) {
+      setRejectedId(food._id);
       setExclusions((prev) => [...prev, food._id]);
       onDislike && onDislike(food);
-      try {
-        await savePreference(food._id, "dislike");
-      } catch (e) {
-        console.error("failed to save dislike", e);
-      }
+      // preference saving disabled
     }
   };
 
@@ -66,7 +60,7 @@ export default function RandomPicker({ onLike, onDislike }) {
 
   return (
     <div className="space-y-4">
-      <FoodCard food={food} />
+      <FoodCard food={food} rejected={food && food._id === rejectedId} />
       <div className="flex gap-4 justify-center">
         <button
           onClick={handleYes}

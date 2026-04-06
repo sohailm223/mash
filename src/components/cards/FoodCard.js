@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Clock, Flame, Utensils } from "lucide-react";
 import { Card } from "../common/Card";
 
-const FoodCard = ({ food }) => {
+const FoodCard = ({ food, rejected }) => {
   const [imgSrc, setImgSrc] = useState(food.image);
   const [hasError, setHasError] = useState(false);
 
@@ -15,7 +15,7 @@ const FoodCard = ({ food }) => {
   };
 
   return (
-    <Card>
+    <Card className={rejected ? "border-2 border-red-500" : ""}>
       <div className="relative w-full h-56 overflow-hidden bg-gray-100">
         <img
           src={imgSrc || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80"}

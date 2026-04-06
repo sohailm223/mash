@@ -1,29 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getProfile } from "@/components/api";
 import FoodCard from "@/components/cards/FoodCard";
 import Link from "next/link";
 
 export default function SavedPage() {
-  const [foods, setFoods] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await getProfile();
-        if (res.success && res.data && res.data.likedFoods) {
-          setFoods(res.data.likedFoods);
-        }
-      } catch (e) {
-        console.error("failed to load profile", e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  // saved items feature disabled in simplified version
+  const foods = [];
+  const loading = false;
 
   return (
     <div className="p-10">

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import FoodCard from "./cards/FoodCard";
-import { savePreference } from "./api";
 
 export default function FoodDetails({ food, onYes, onNo }) {
   const [current, setCurrent] = useState(food);
+  const [rejected, setRejected] = useState(false);
 
   useEffect(() => {
     setCurrent(food);
@@ -15,27 +15,18 @@ export default function FoodDetails({ food, onYes, onNo }) {
     return <p>Select a food item or wait for a random suggestion.</p>;
   }
 
-  const handleYes = async () => {
-    try {
-      await savePreference(current._id, "like");
-      onYes && onYes(current);
-    } catch (e) {
-      console.error("Failed to save like", e);
-    }
+  const handleYes = () => {
+    onYes && onYes(current);
   };
 
-  const handleNo = async () => {
-    try {
-      await savePreference(current._id, "dislike");
-    } catch (e) {
-      console.error("Failed to save dislike", e);
-    }
+  const handleNo = () => {
+    setRejected(true);
     onNo && onNo();
   };
 
   return (
     <div className="space-y-4">
-      <FoodCard food={current} />
+      <FoodCard food={current} rejected={rejected} />
       <div className="flex gap-4 justify-center">
         <button
           onClick={handleYes}
