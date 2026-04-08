@@ -3,15 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 
 const FILTER_CONFIG = [
-  { id: "dietType", label: "Diet Type", options: ["Veg", "Non-Veg", "Vegan"] },
-  { id: "healthGoals", label: "Health Goals", options: ["Weight Loss", "Weight Gain", "Balanced", "Muscle Gain"] },
-  // { id: "spiceLevel", label: "Spice Level", options: ["Mild", "Medium", "Spicy"] },
-  { id: "allergies", label: "Allergies", options: ["No allergies", "Gluten", "Dairy", "Nuts", "Shellfish", "Eggs","onion","garlic"] },
-  { id: "mealTiming", label: "Meal Timing", options: ["Breakfast", "Lunch", "Dinner", "Snacks"] },
-  // { id: "mood", label: "Mood", options: ["Comfort", "Excited", "Indulgent", "Adventurous"] },
-  // { id: "weather", label: "Weather", options: ["Summer", "Winter", "Rainy"] },
-  // { id: "foodStyle", label: "Food Style", options: ["Fast Food", "Home-cooked", "Street Food"] },
-  // { id: "cuisine", label: "Cuisine", options: ["Indian", "Chinese", "Italian", "Mexican", "Continental"] }
+  { id: "dietType", label: "Diet Type", emoji: "🥗", options: ["Veg", "Non-Veg", "Vegan"], selectionType: "single" },
+  { id: "healthGoals", label: "Health Goals", emoji: "🎯", options: ["Weight Loss", "Weight Gain", "Balanced", "Muscle Gain"], selectionType: "multi" },
+  { id: "allergies", label: "Allergies", emoji: "⚠️", options: ["No allergies", "Gluten", "Dairy", "Nuts", "Shellfish", "Eggs", "Onion", "Garlic"], selectionType: "single" },
+  { id: "mealTiming", label: "Meal Timing", emoji: "🕐", options: ["Breakfast", "Lunch", "Dinner", "Snacks"], selectionType: "single" },
 ];
 
 export default function FilterPanel({ currentParams, onApply, onClose }) {
@@ -26,63 +21,43 @@ export default function FilterPanel({ currentParams, onApply, onClose }) {
     FILTER_CONFIG.forEach(category => {
       const paramKey = category.id === 'allergies' ? 'restrictedIngredients' : category.id;
       const paramValue = params.get(paramKey);
-      
-      // Map 'healthGoals' from filter config to 'weightGoal' in preferences
       const prefKey = category.id === 'healthGoals' ? 'weightGoal' : category.id;
       const prefValue = userPreferences[prefKey];
 
       if (paramValue) {
-        // URL params take precedence
         initialFilters[category.id] = paramValue.split(',');
       } else if (prefValue && Array.isArray(prefValue) && prefValue.length > 0) {
-        // Fallback to user's saved preferences from session
         initialFilters[category.id] = prefValue;
       }
     });
-    
     setFilters(initialFilters);
   }, [currentParams, session]);
 
   const handleToggle = (categoryId, optionValue) => {
-    console.log(`Filter modified for Category:  "${categoryId}" - Option: "${optionValue}" at ${new Date().toLocaleTimeString()}`);
     const normalizedValue = optionValue.toLowerCase().replace(/\s+/g, "-");
-    
     setFilters(prev => {
       const currentValues = prev[categoryId] || [];
+      const categoryConfig = FILTER_CONFIG.find(config => config.id === categoryId);
       let newValues;
-      
-      if (currentValues.includes(normalizedValue)) {
-        newValues = currentValues.filter(v => v !== normalizedValue);
+
+      if (categoryConfig.selectionType === "single") {
+        newValues = currentValues.includes(normalizedValue) ? [] : [normalizedValue];
       } else {
-        if (categoryId === 'allergies') {
-          if (normalizedValue === 'no-allergies') {
-            newValues = ['no-allergies']; // Selecting "No allergies" clears others
-          } else {
-            // Selecting a specific allergy clears "No allergies"
-            const withoutNoAllergies = currentValues.filter(v => v !== 'no-allergies');
-            newValues = [...withoutNoAllergies, normalizedValue];
-          }
+        if (currentValues.includes(normalizedValue)) {
+          newValues = currentValues.filter(v => v !== normalizedValue);
         } else {
           newValues = [...currentValues, normalizedValue];
         }
       }
-      // how to get time ye filter kb remove hoga jo bydefualt aajye 
-      return {
-        ...prev,
-        [categoryId]: newValues
-      };
+      return { ...prev, [categoryId]: newValues };
     });
   };
 
-  const handleApply = async () => {
-    console.log(`Filters applied at time start ${new Date().toLocaleTimeString()}`);
+  const handleApply = () => {
     const params = new URLSearchParams(currentParams);
-    
-    // Update params with new filter state
     FILTER_CONFIG.forEach(category => {
       const values = filters[category.id];
       const paramKey = category.id === 'allergies' ? 'restrictedIngredients' : category.id;
-
       if (values && values.length > 0) {
         params.set(paramKey, values.join(','));
         if (paramKey !== category.id) params.delete(category.id);
@@ -91,71 +66,199 @@ export default function FilterPanel({ currentParams, onApply, onClose }) {
         if (paramKey !== category.id) params.delete(category.id);
       }
     });
-    console.log("show food after applying filters with params:", params.toString());
 
-    // Save filters to a temporary cookie for 1 hour (3600 seconds)
-    const expirySeconds = 3600; // 1 Hour (60 * 60)
+    const expirySeconds = 3600;
     document.cookie = `temp_filters=${params.toString()}; path=/; max-age=${expirySeconds}`;
-    
     onApply(params.toString(), Date.now() + expirySeconds * 1000);
   };
 
+  const activeCount = Object.values(filters).flat().filter(Boolean).length;
+
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose}></div>
-      
-      {/* Slide-in Panel */}
-      <div className="relative w-full max-w-xs bg-white h-full shadow-2xl overflow-y-auto flex flex-col animate-in slide-in-from-right duration-300">
-        <div className="p-5 border-b flex justify-between items-center sticky top-0 bg-white z-10">
-          <h3 className="text-xl font-bold text-gray-800">Filter Preferences</h3>
-          <button 
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+        
+        .fp-overlay {
+          position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000;
+          display: flex; justify-content: flex-end;
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(8px);
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        <div className="p-6 flex-1 space-y-8">
-          {FILTER_CONFIG.map((category) => (
-            <div key={category.id}>
-              <h4 className="font-semibold text-gray-900 mb-3">{category.label}</h4>
-              <div className="flex flex-wrap gap-2">
-                {category.options.map(option => {
-                  const val = option.toLowerCase().replace(/\s+/g, "-");
-                  const isActive = filters[category.id]?.includes(val);
-                  
-                  return (
-                    <button
-                      key={option}
-                      onClick={() => handleToggle(category.id, option)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        isActive 
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  );
-                })}
-              </div>
+        .fp-panel {
+          width: 100%;
+          max-width: 380px;
+          height: calc(100vh - 140px); /* Proper spacing for top/bottom */
+          margin-top: 100px; /* Offset to sit below header */
+          margin-right: 20px;
+          margin-bottom: 40px;
+          background: rgba(15, 15, 15, 0.2);
+          backdrop-filter: blur(40px) saturate(160%);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 32px;
+          display: flex; flex-direction: column;
+          box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+          animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideIn {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+
+        .fp-chip {
+          cursor: pointer;
+          transition: all 0.15s ease;
+          border: none;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .fp-chip:hover { transform: translateY(-2px); }
+        .fp-chip:active { transform: scale(0.95); }
+
+        .fp-apply {
+          transition: all 0.2s ease;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .fp-apply:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(249,115,22,0.45) !important; }
+        .fp-apply:active { transform: scale(0.97); }
+
+        .fp-close {
+          transition: all 0.2s ease;
+        }
+        .fp-close:hover { transform: rotate(90deg); background: #f3f4f6; }
+      `}</style>
+
+      <div className="fp-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="fp-panel">
+
+          {/* Header */}
+          <div style={{
+            padding: '16px 20px', /* Slightly reduced padding */
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'transparent',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <div>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 'clamp(10px, 2.5vw, 11px)', fontWeight: 700, color: '#f97316', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
+                Meal Preferences
+              </p>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(20px, 5vw, 22px)', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                Your Filters
+              </h3>
             </div>
-          ))}
-        </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {activeCount > 0 && (
+                <span style={{
+                  background: '#f97316', color: '#fff',
+                  fontSize: 12, fontWeight: 700, padding: '3px 10px',
+                  borderRadius: 20,
+                }}>
+                  {activeCount} active
+                </span>
+              )}
+              <button
+                onClick={onClose}
+                className="fp-close flex-shrink-0" /* Added flex-shrink-0 */
+                style={{
+                  width: 38, height: 38, borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.05)', border: '1.5px solid rgba(255,255,255,0.1)',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#ffffff',
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
 
-        <div className="p-5 border-t bg-gray-50 sticky bottom-0">
-          <button 
-            onClick={handleApply}
-            className="w-full py-3.5 bg-gray-900 hover:bg-black text-white text-lg font-bold rounded-2xl shadow-lg transition transform active:scale-[0.98]"
-          >
-            Apply Changes
-          </button>
+          {/* Scrollable filter content */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+            {FILTER_CONFIG.map((category) => (
+              <div key={category.id}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <span style={{ fontSize: 18 }}>{category.emoji}</span>
+                  <h4 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 'clamp(13px, 3vw, 14px)', fontWeight: 700, color: '#ffffff', margin: 0, letterSpacing: '0.02em' }}>
+                    {category.label}
+                  </h4>
+                  {filters[category.id]?.length > 0 && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: '#f97316',
+                      background: '#fff7ed', padding: '2px 8px', borderRadius: 10,
+                    }}>
+                      {filters[category.id].length}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {category.options.map(option => {
+                    const val = option.toLowerCase().replace(/\s+/g, "-");
+                    const isActive = filters[category.id]?.includes(val);
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => handleToggle(category.id, option)}
+                        className="fp-chip"
+                        style={{
+                          padding: '6px 12px', /* Slightly reduced padding */
+                          borderRadius: 50, 
+                          fontSize: 13, fontWeight: 600,
+                          background: isActive ? 'rgba(249, 115, 22, 0.2)' : 'rgba(255,255,255,0.05)',
+                          color: isActive ? '#fb923c' : 'rgba(255,255,255,0.6)',
+                          border: `1.5px solid ${isActive ? '#f97316' : 'rgba(255,255,255,0.1)'}`,
+                          boxShadow: isActive ? '0 4px 12px rgba(249,115,22,0.2)' : 'none',
+                        }}
+                      >
+                        {isActive && <span style={{ marginRight: 5, fontSize: 11 }}>✓</span>}
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div style={{
+            padding: '16px 20px', /* Slightly reduced padding */
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'transparent',
+            display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            <button
+              onClick={handleApply}
+              className="fp-apply"
+              style={{
+                width: '100%', padding: '15px',
+                background: 'linear-gradient(135deg, #f97316, #fb923c)', 
+                color: '#fff', border: 'none', borderRadius: 16,
+                fontSize: 16, fontWeight: 800, cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(249,115,22,0.35)',
+                letterSpacing: '0.02em',
+              }}
+            >
+              Apply Changes
+            </button>
+            <button
+              onClick={() => {
+                setFilters({});
+              }}
+              style={{
+                width: '100%',
+                background: 'transparent', border: 'none',
+                color: '#9ca3af', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Clear all filters
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
