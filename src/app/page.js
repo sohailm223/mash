@@ -51,8 +51,16 @@ export default async function Home() {
   const tempFilters = cookieStore.get("temp_filters");
   let queryString = "";
 
+  const userAllergies = (user.questionnaire || [])
+    .find((item) => item.questionId === "allergies")
+    ?.answer || [];
+
   if (tempFilters) {
-    queryString = tempFilters.value;
+    const tempParams = new URLSearchParams(tempFilters.value);
+    if (!Array.isArray(userAllergies) || userAllergies.length === 0) {
+      tempParams.delete("restrictedIngredients");
+    }
+    queryString = tempParams.toString();
   } else {
     const params = new URLSearchParams();
 
