@@ -1,8 +1,7 @@
+import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
-import Food from "@/models/Food";
 
 export const dynamic = "force-dynamic"; // 🔥 MUST
-
 
 import {
   MEAL_TIMING_OPTIONS,
@@ -48,7 +47,6 @@ export async function POST(req) {
   try {
     await connectDB();
     const FoodModel = (await import("@/models/Food")).default;
-
     const body = await req.json();
 
     console.log("Incoming body:", body); 
@@ -81,7 +79,7 @@ export async function POST(req) {
     return Response.json(newFood, { status: 201 });
   } catch (error) {
     console.error("POST ERROR:", error); // VERY IMPORTANT
-    return Response.json(
+    return NextResponse.json(
       { message: error.message },
       { status: 500 }
     );
@@ -91,9 +89,9 @@ export async function POST(req) {
 export async function GET(req) {
   try {
     await connectDB();
-     const FoodModel = (await import("@/models/Food")).default;
+    const FoodModel = (await import("@/models/Food")).default;
 
-    const { searchParams } = new URL(req.url);
+    const { searchParams } = req.nextUrl;
     const query = {};
 
     for (const [key, value] of searchParams.entries()) {
@@ -115,14 +113,19 @@ export async function GET(req) {
           query[key] = { $in: Array.from(searchValues) };
         }
       } else if (key === 'restrictedIngredients' || key === 'allergies') {
-        // It checks if the `restrictedIngredients` field in the DB contains the user's allergies.
-        const ingredientsToLookFor = value.split(',')
+        // Exclude foods that contain these ingredients in their 'ingredients' list.
+        // Do not use $nin on food.restrictedIngredients here because this field represents
+        // ingredients the recipe avoids, not ingredients the food contains.
+        const excludedItems = value.split(',')
           .map(v => v.trim().toLowerCase())
-          .filter(v => v && v !== 'no-allergies' && v !== 'no allergies');
+          .filter(v => v && !['no-allergies', 'no allergies', 'no'].includes(v));
 
-        if (ingredientsToLookFor.length > 0) {
-          //  URL is `allergies=garlic,onion`, it finds foods where `restrictedIngredients` contains BOTH.
-          query.restrictedIngredients = { $all: ingredientsToLookFor.map(ing => new RegExp(ing, 'i')) };
+        if (excludedItems.length > 0) {
+          const patterns = excludedItems.map(ing => new RegExp(ing, 'i'));
+
+          if (!query.ingredients) query.ingredients = {}; // Ensure ingredients object exists
+          if (!query.ingredients.$nin) query.ingredients.$nin = []; // Ensure $nin array exists
+          query.ingredients.$nin.push(...patterns); // Add exclusion patterns
         }
       } else if (key === 'ingredients') {
         // 2. ingredients' parameter for self-cooking
@@ -156,13 +159,11 @@ export async function GET(req) {
       }
     }
 
-    console.log("Database Query:", JSON.stringify(query, null, 2));
-
      const foods = await FoodModel.find(query).lean();
 
-    return Response.json(foods);
+    return NextResponse.json(foods, { status: 200 });
   } catch (error) {
     console.error("GET ERROR:", error);
-    return Response.json({ message: error.message }, { status: 500 });
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
